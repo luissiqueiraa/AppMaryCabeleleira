@@ -1,0 +1,62 @@
+{
+  "title": "Crie sua conta.",
+  "subtitle": "Preencha alguns dados para começar.",
+  "banner": {
+    "quote": "Cuidar de você é o primeiro passo para se sentir bonita.",
+    "author": "Bianca Lima",
+    "role": "cliente desde 2021",
+    "label": "Cliente aproveitando seu momento de autocuidado no MaryCabeleleira"
+  },
+  "fields": {
+    "fullName": { "label": "Nome completo", "placeholder": "Maria Fernandes" },
+    "email": { "label": "Email", "placeholder": "voce@email.com" },
+    "phoneNumber": { "label": "Telefone", "placeholder": "(11) 98456-2210" },
+    "birthDate": { "label": "Data de nascimento" },
+    "password": { "label": "Senha", "placeholder": "••••••••" },
+    "confirmPassword": { "label": "Confirmar senha", "placeholder": "••••••••" },
+    "referralSource": {
+      "label": "Como você nos conheceu? (opcional)",
+      "placeholder": "Selecione uma opção",
+      "options": {
+        "instagram": "Instagram",
+        "facebook": "Facebook",
+        "google": "Google",
+        "friend": "Indicação de amiga ou família",
+        "other": "Outro"
+      }
+    }
+  },
+  "passwordHint": "Mínimo de 8 caracteres, com maiúscula, minúscula, número e caractere especial.",
+  "passwordStrength": {
+    "label": "Força da senha",
+    "weak": "Fraca",
+    "fair": "Razoável",
+    "good": "Boa",
+    "strong": "Forte"
+  },
+  "terms": {
+    "prefix": "Aceito os",
+    "serviceLink": "Termos de Uso",
+    "middle": "e a",
+    "privacyLink": "Política de Privacidade"
+  },
+  "submit": "Criar conta",
+  "submitting": "Criando conta...",
+  "footer": {
+    "text": "Já tem uma conta?",
+    "link": "Entrar"
+  },
+  "errors": {
+    "fullNameRequired": "Informe seu nome completo.",
+    "emailRequired": "Informe seu e-mail.",
+    "emailInvalid": "Informe um e-mail válido.",
+    "phoneRequired": "Informe seu telefone.",
+    "phoneInvalid": "Informe um telefone válido.",
+    "passwordRequired": "Informe uma senha.",
+    "passwordWeak": "A senha não atende aos requisitos.",
+    "confirmPasswordRequired": "Confirme sua senha.",
+    "confirmPasswordMismatch": "As senhas não coincidem.",
+    "termsRequired": "Você precisa aceitar os Termos de Uso e a Política de Privacidade.",
+    "submitFailed": "Não foi possível criar sua conta. Verifique os dados e tente novamente."
+  }
+}

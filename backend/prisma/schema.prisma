@@ -1,0 +1,224 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  active
+  inactive
+  blocked
+}
+
+// Role "primária" do usuário, denormalizada para checagens rápidas de
+// autorização (ex: claim do JWT) sem precisar de join em toda requisição.
+// A fonte de verdade para múltiplas roles é UserRole.
+model User {
+  id           String     @id @default(uuid())
+  roleId       String?
+  fullName     String
+  email        String     @unique
+  passwordHash String
+  phoneNumber  String?
+  status       UserStatus @default(active)
+  lastLoginAt  DateTime?
+
+  // Proteção contra brute force (FASE 4): incrementado a cada login inválido,
+  // zerado em login bem-sucedido. lockedUntil bloqueia novas tentativas até expirar.
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
+  // Reset de senha (FASE 4): token de uso único, nunca armazenado em texto puro.
+  passwordResetTokenHash  String?
+  passwordResetExpiresAt DateTime?
+
+  avatarUrl String?
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  role                Role?          @relation("UserPrimaryRole", fields: [roleId], references: [id])
+  userRoles           UserRole[]
+  refreshTokens       RefreshToken[]
+  auditLogs           AuditLog[]
+  employee            Employee?
+  clientAppointments  Appointment[]  @relation("ClientAppointments")
+
+  @@index([roleId])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  usersWithPrimaryRole User[]           @relation("UserPrimaryRole")
+  userRoles            UserRole[]
+  rolePermissions      RolePermission[]
+
+  @@index([deletedAt])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  rolePermissions RolePermission[]
+
+  @@index([deletedAt])
+  @@map("permissions")
+}
+
+model UserRole {
+  id        String    @id @default(uuid())
+  userId    String
+  roleId    String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId])
+  @@index([roleId])
+  @@map("userRoles")
+}
+
+model RolePermission {
+  id           String    @id @default(uuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime  @default(now())
+  deletedAt    DateTime?
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+  @@map("rolePermissions")
+}
+
+// revokedAt cumpre o papel do soft delete: token revogado = inválido.
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refreshTokens")
+}
+
+model Service {
+  id          String    @id @default(uuid())
+  name        String
+  description String?
+  duration    Int // minutos
+  price       Decimal   @db.Decimal(10, 2)
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  appointments Appointment[]
+
+  @@index([active])
+  @@index([deletedAt])
+  @@map("services")
+}
+
+model Employee {
+  id        String    @id @default(uuid())
+  userId    String    @unique
+  hireDate  DateTime
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([active])
+  @@index([deletedAt])
+  @@map("employees")
+}
+
+enum AppointmentStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+model Appointment {
+  id          String            @id @default(uuid())
+  clientId    String
+  employeeId  String?
+  serviceId   String
+  status      AppointmentStatus @default(pending)
+  scheduledAt DateTime
+
+  // Snapshot do Service no momento do agendamento: preço/duração podem mudar
+  // depois e não devem alterar retroativamente um agendamento já feito
+  // (histórico financeiro e o conflict-check precisam do valor "congelado").
+  durationMinutes Int
+  price           Decimal @db.Decimal(10, 2)
+
+  payOnSite Boolean @default(true)
+  notes     String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  client   User      @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
+  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
+  service  Service   @relation(fields: [serviceId], references: [id])
+
+  @@index([clientId])
+  @@index([employeeId, scheduledAt])
+  @@index([status])
+  @@index([deletedAt])
+  @@map("appointments")
+}
+
+// Trilha de auditoria: imutável por definição, nunca soft-deletada.
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("auditLogs")
+}

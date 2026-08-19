@@ -1,0 +1,7 @@
+{
+  "back": "Voltar",
+  "showPassword": "Mostrar senha",
+  "hidePassword": "Ocultar senha",
+  "socialDivider": "ou continue com",
+  "continueWith": "Continuar com {{provider}}"
+}

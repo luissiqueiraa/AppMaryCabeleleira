@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /appointments
+Disallow: /clients
+Disallow: /employees
+Disallow: /profile
+
+Sitemap: https://www.marycabeleleira.com.br/sitemap.xml

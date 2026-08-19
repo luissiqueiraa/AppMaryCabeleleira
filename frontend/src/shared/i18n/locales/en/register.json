@@ -1,0 +1,62 @@
+{
+  "title": "Create your account.",
+  "subtitle": "Fill in a few details to get started.",
+  "banner": {
+    "quote": "Taking care of yourself is the first step to feeling beautiful.",
+    "author": "Bianca Lima",
+    "role": "client since 2021",
+    "label": "Client enjoying her self-care routine at MaryCabeleleira"
+  },
+  "fields": {
+    "fullName": { "label": "Full Name", "placeholder": "Maria Fernandes" },
+    "email": { "label": "Email", "placeholder": "you@email.com" },
+    "phoneNumber": { "label": "Phone Number", "placeholder": "(11) 98456-2210" },
+    "birthDate": { "label": "Date of Birth" },
+    "password": { "label": "Password", "placeholder": "••••••••" },
+    "confirmPassword": { "label": "Confirm Password", "placeholder": "••••••••" },
+    "referralSource": {
+      "label": "How did you hear about us? (optional)",
+      "placeholder": "Select an option",
+      "options": {
+        "instagram": "Instagram",
+        "facebook": "Facebook",
+        "google": "Google",
+        "friend": "Friend or family",
+        "other": "Other"
+      }
+    }
+  },
+  "passwordHint": "At least 8 characters, with uppercase, lowercase, number and special character.",
+  "passwordStrength": {
+    "label": "Password strength",
+    "weak": "Weak",
+    "fair": "Fair",
+    "good": "Good",
+    "strong": "Strong"
+  },
+  "terms": {
+    "prefix": "I agree to the",
+    "serviceLink": "Terms of Service",
+    "middle": "and the",
+    "privacyLink": "Privacy Policy"
+  },
+  "submit": "Create Account",
+  "submitting": "Creating account...",
+  "footer": {
+    "text": "Already have an account?",
+    "link": "Sign in"
+  },
+  "errors": {
+    "fullNameRequired": "Enter your full name.",
+    "emailRequired": "Enter your email.",
+    "emailInvalid": "Enter a valid email.",
+    "phoneRequired": "Enter your phone number.",
+    "phoneInvalid": "Enter a valid phone number.",
+    "passwordRequired": "Enter a password.",
+    "passwordWeak": "Password does not meet the requirements.",
+    "confirmPasswordRequired": "Confirm your password.",
+    "confirmPasswordMismatch": "Passwords do not match.",
+    "termsRequired": "You must accept the Terms of Service and the Privacy Policy.",
+    "submitFailed": "We couldn't create your account. Please check your details and try again."
+  }
+}
