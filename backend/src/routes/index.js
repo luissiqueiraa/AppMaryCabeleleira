@@ -8,6 +8,8 @@ import employeesRoutes from "./employees.routes.js";
 import clientsRoutes from "./clients.routes.js";
 import servicesRoutes from "./services.routes.js";
 import appointmentsRoutes from "./appointments.routes.js";
+import notificationsRoutes from "./notifications.routes.js";
+import settingsRoutes from "./settings.routes.js";
 
 const router = Router();
 
@@ -20,5 +22,7 @@ router.use("/employees", employeesRoutes);
 router.use("/clients", clientsRoutes);
 router.use("/services", servicesRoutes);
 router.use("/appointments", appointmentsRoutes);
+router.use("/notifications", notificationsRoutes);
+router.use("/settings", settingsRoutes);
 
 export default router;

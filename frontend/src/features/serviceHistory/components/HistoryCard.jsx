@@ -4,7 +4,7 @@ export default function HistoryCard({ item }) {
   return (
     <li className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
       <img
-        src="/Mary_Cabelereira.jpeg"
+        src="/Mary_Cabelereira.png"
         alt=""
         aria-hidden="true"
         className="h-14 w-14 shrink-0 rounded-lg object-cover"

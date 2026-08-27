@@ -18,6 +18,7 @@
 
   --animate-fade-in: fade-in 0.2s ease-out;
   --animate-slide-up: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-toast-in: toast-in 0.25s ease-out;
 }
 
 @keyframes fade-in {
@@ -38,6 +39,20 @@
   }
 }
 
+/* Estilo "Grow" do MUI Snackbar: escala a partir do centro, funciona bem
+   independente do canto de onde o toast entra (topo no mobile, canto
+   inferior direito no desktop). */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 html,
 body,
 #root {
@@ -53,4 +68,11 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-primary-light);
   outline-offset: 2px;
+}
+
+/* O preflight do Tailwind zera o cursor de <button> para "default" (padrão
+   nativo do SO) — sem isso, nenhum botão da aplicação parece clicável. */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer;
 }

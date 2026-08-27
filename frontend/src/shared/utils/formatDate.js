@@ -34,3 +34,13 @@ export function formatFullDate(iso) {
 export function formatTime(iso) {
   return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
+
+export function formatRelativeDate(iso) {
+  if (!iso) return "—";
+  const diffDays = Math.floor((Date.now() - new Date(iso).getTime()) / (24 * 60 * 60 * 1000));
+  if (diffDays <= 0) return "Hoje";
+  if (diffDays === 1) return "1 dia";
+  if (diffDays < 7) return `${diffDays} dias`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} sem`;
+  return `${Math.floor(diffDays / 30)} mês`;
+}

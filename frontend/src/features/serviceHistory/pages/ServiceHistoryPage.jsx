@@ -1,20 +1,21 @@
 import { useEffect, useState } from "react";
-import KpiCard from "../../dashboard/components/KpiCard";
 import AutocompleteFilter from "../../../shared/components/AutocompleteFilter";
 import HistoryCard from "../components/HistoryCard";
 import HistoryTable from "../components/HistoryTable";
 import { listAppointments } from "../../dashboard/services/appointmentService";
 import { mapAppointment } from "../../../shared/utils/mapAppointment";
 import { historyFilters } from "../data/mockHistory";
+import { useAuth } from "../../../shared/contexts/useAuth";
 
 export default function ServiceHistoryPage() {
+  const { user } = useAuth();
   const [history, setHistory] = useState([]);
   const [loadStatus, setLoadStatus] = useState("loading");
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
     let isMounted = true;
-    listAppointments()
+    listAppointments({ clientId: user.id })
       .then(({ data }) => {
         if (!isMounted) return;
         setHistory(
@@ -28,14 +29,15 @@ export default function ServiceHistoryPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user.id]);
 
-  const filteredHistory = filter === "all" ? history : history.filter((item) => item.status === filter);
-
-  const historySummary = [
-    { id: "total", label: "Atendimentos", value: String(history.length) },
-    { id: "completed", label: "Finalizados", value: String(history.filter((item) => item.status === "completed").length) },
-  ];
+  const filteredHistory =
+    filter === "all"
+      ? history
+      : history.filter((item) => {
+          const ageMs = new Date() - new Date(item.scheduledAt);
+          return ageMs >= 0 && ageMs <= Number(filter) * 24 * 60 * 60 * 1000;
+        });
 
   if (loadStatus === "loading") {
     return <p className="text-sm text-gray-500">Carregando...</p>;
@@ -51,24 +53,18 @@ export default function ServiceHistoryPage() {
 
   return (
     <div className="space-y-6">
-      <div className="hidden grid-cols-2 gap-4 lg:grid">
-        {historySummary.map((item) => (
-          <KpiCard key={item.id} {...item} />
-        ))}
-      </div>
-
       <div className="mx-auto max-w-3xl space-y-4 lg:hidden">
         <AutocompleteFilter
           options={historyFilters}
           value={filter}
           onChange={setFilter}
-          ariaLabel="Filtrar histórico"
+          ariaLabel="Filtrar histórico por período"
           placeholder="Filtrar histórico"
         />
 
         {filteredHistory.length === 0 ? (
           <p className="rounded-lg border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
-            Nenhum atendimento encontrado para esse filtro.
+            Nenhum atendimento encontrado para esse período.
           </p>
         ) : (
           <ul className="space-y-3">
@@ -86,14 +82,14 @@ export default function ServiceHistoryPage() {
             options={historyFilters}
             value={filter}
             onChange={setFilter}
-            ariaLabel="Filtrar histórico"
+            ariaLabel="Filtrar histórico por período"
             placeholder="Filtrar histórico"
           />
         </div>
 
         {filteredHistory.length === 0 ? (
           <p className="mt-6 rounded-lg border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
-            Nenhum atendimento encontrado para esse filtro.
+            Nenhum atendimento encontrado para esse período.
           </p>
         ) : (
           <div className="mt-4 overflow-x-auto">

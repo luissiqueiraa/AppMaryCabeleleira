@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { Link } from "react-router-dom";
 import { FiChevronRight, FiCheck, FiCamera } from "react-icons/fi";
-import Avatar from "../../dashboard/components/Avatar";
+import Avatar from "../../../shared/components/Avatar";
 
 export default function AccountMenuList({ profile, items, onAvatarChange, isUploadingAvatar }) {
   const fileInputRef = useRef(null);

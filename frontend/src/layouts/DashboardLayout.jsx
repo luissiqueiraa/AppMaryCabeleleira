@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Outlet, useNavigate, useLocation, matchPath, Link } from "react-router-dom";
-import { FiSettings, FiPlus } from "react-icons/fi";
+import { FiSettings } from "react-icons/fi";
 import Sidebar from "../features/dashboard/components/Sidebar";
 import DashboardHeader from "../features/dashboard/components/DashboardHeader";
 import BottomNav from "../features/dashboard/components/BottomNav";
 import MobileDrawer from "../features/dashboard/components/MobileDrawer";
-import { bottomNav } from "../features/dashboard/data/sidebarNav";
-import { adminBottomNav } from "../features/admin/data/adminNav";
-import { currentUser } from "../features/dashboard/data/currentUser";
+import { clientNavItems, getAdminNavItems, getBottomNav } from "../features/dashboard/data/sidebarNav";
+import { adminBottomNav, employeeAdminBottomNav } from "../features/admin/data/adminNav";
 import { useAuth } from "../shared/contexts/useAuth";
+import { ROLES } from "../shared/constants/roles";
 
 const SETTINGS_LINK = (
   <Link
@@ -20,36 +20,6 @@ const SETTINGS_LINK = (
   </Link>
 );
 
-const ADD_EMPLOYEE_BUTTON = (
-  <button
-    type="button"
-    className="flex items-center gap-1.5 rounded-lg bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-pink-700"
-  >
-    <FiPlus size={16} aria-hidden="true" />
-    Adicionar
-  </button>
-);
-
-const NEW_SERVICE_BUTTON = (
-  <button
-    type="button"
-    className="flex items-center gap-1.5 rounded-lg bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-pink-700"
-  >
-    <FiPlus size={16} aria-hidden="true" />
-    Novo serviço
-  </button>
-);
-
-const ADD_CLIENT_BUTTON = (
-  <button
-    type="button"
-    className="flex items-center gap-1.5 rounded-lg bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-pink-700"
-  >
-    <FiPlus size={16} aria-hidden="true" />
-    Adicionar cliente
-  </button>
-);
-
 const PAGE_TITLES = {
   "/dashboard": { eyebrow: "Painel da cliente", title: "Início", mobileTitle: "Início" },
   "/appointments": { eyebrow: "Agenda", title: "Agendamentos", mobileTitle: "Agendamentos" },
@@ -59,7 +29,6 @@ const PAGE_TITLES = {
     mobileTitle: "Histórico",
 
   },
-  "/notifications": { eyebrow: "Avisos", title: "Notificações", mobileTitle: "Notificações" },
   "/profile": {
     eyebrow: "Conta e preferências",
     title: "Meu perfil",
@@ -86,19 +55,16 @@ const PAGE_TITLES = {
     eyebrow: "Equipe atual",
     title: "Funcionárias",
     mobileTitle: "Funcionárias",
-    headerAction: ADD_EMPLOYEE_BUTTON,
   },
   "/admin/services": {
     eyebrow: "Catálogo do salão",
     title: "Serviços",
     mobileTitle: "Serviços",
-    headerAction: NEW_SERVICE_BUTTON,
   },
   "/admin/clients": {
     eyebrow: "Base de clientes",
     title: "Clientes",
     mobileTitle: "Clientes",
-    headerAction: ADD_CLIENT_BUTTON,
   },
   "/admin/settings": { eyebrow: "Identidade do salão", title: "Configurações", mobileTitle: "Configurações" },
 };
@@ -120,14 +86,16 @@ function resolvePageInfo(pathname, isAdmin) {
 }
 
 export default function DashboardLayout() {
-  const [collapsed, setCollapsed] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   const isAdmin = location.pathname.startsWith("/admin");
   const pageInfo = resolvePageInfo(location.pathname, isAdmin);
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
+  const canManageStaff = user?.role?.name === ROLES.OWNER || user?.role?.name === ROLES.ADMIN;
+  const canSeeAdmin = canManageStaff || user?.role?.name === ROLES.EMPLOYEE;
+  const navItems = isAdmin ? getAdminNavItems({ canManageStaff }) : clientNavItems;
 
   async function handleLogout() {
     await logout();
@@ -136,15 +104,14 @@ export default function DashboardLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 text-gray-900">
-      <Sidebar
-        collapsed={collapsed}
-        onToggle={() => setCollapsed((prev) => !prev)}
-        onLogout={handleLogout}
-      />
+      <Sidebar onLogout={handleLogout} navItems={navItems} isAdmin={isAdmin} canSeeAdmin={canSeeAdmin} />
       <MobileDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         onLogout={handleLogout}
+        navItems={navItems}
+        isAdmin={isAdmin}
+        canSeeAdmin={canSeeAdmin}
       />
 
       <div className="flex h-screen flex-1 flex-col overflow-hidden">
@@ -154,13 +121,21 @@ export default function DashboardLayout() {
           mobileTitle={pageInfo.mobileTitle}
           mobileAction={pageInfo.mobileAction}
           headerAction={pageInfo.headerAction}
-          user={currentUser}
+          user={{ name: user?.fullName ?? "", avatarUrl: user?.avatarUrl }}
           onOpenMenu={() => setDrawerOpen(true)}
         />
         <main className="flex-1 overflow-y-auto px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:pb-8">
           <Outlet />
         </main>
-        <BottomNav items={isAdmin ? adminBottomNav : bottomNav} />
+        <BottomNav
+          items={
+            isAdmin
+              ? canManageStaff
+                ? adminBottomNav
+                : employeeAdminBottomNav
+              : getBottomNav({ canSeeAdmin, canManageStaff })
+          }
+        />
       </div>
     </div>
   );

@@ -8,6 +8,8 @@ import {
   loginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  updateMeSchema,
+  changeMyPasswordSchema,
 } from "../validators/auth.validator.js";
 
 const router = Router();
@@ -18,6 +20,14 @@ router.post("/refresh-token", authController.refreshToken);
 router.post("/logout", authController.logout);
 router.post("/logout-all", authenticate, authController.logoutAll);
 router.get("/me", authenticate, authController.me);
+router.patch("/me", authenticate, validateRequest(updateMeSchema), authController.updateMe);
+router.post(
+  "/me/change-password",
+  authenticate,
+  validateRequest(changeMyPasswordSchema),
+  authController.changeMyPassword
+);
+router.delete("/me", authenticate, authController.deleteMe);
 router.patch("/me/avatar", authenticate, uploadAvatar, authController.updateMyAvatar);
 router.post("/forgot-password", validateRequest(forgotPasswordSchema), authController.forgotPassword);
 router.post("/reset-password", validateRequest(resetPasswordSchema), authController.resetPassword);

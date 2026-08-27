@@ -1,5 +1,3 @@
-import { HiSparkles } from "react-icons/hi2";
-
 export default function AuthBanner({ quote, author, role, label }) {
   return (
     <div
@@ -7,8 +5,7 @@ export default function AuthBanner({ quote, author, role, label }) {
       role="img"
       aria-label={label}
     >
-      <HiSparkles size={20} aria-hidden="true" />
-      <p className="font-display mt-6 text-3xl leading-tight font-medium">“{quote}”</p>
+      <p className="font-display text-3xl leading-tight font-medium">&ldquo;{quote}&rdquo;</p>
       <p className="mt-4 text-sm text-white/80">
         {author} · {role}
       </p>

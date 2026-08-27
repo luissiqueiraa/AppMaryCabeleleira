@@ -1,8 +1,22 @@
 import { prisma } from "../config/database.js";
 
-export function findManyUsers({ skip, take }) {
+function buildSearchWhere(search) {
+  return {
+    deletedAt: null,
+    ...(search
+      ? {
+          OR: [
+            { fullName: { contains: search, mode: "insensitive" } },
+            { email: { contains: search, mode: "insensitive" } },
+          ],
+        }
+      : {}),
+  };
+}
+
+export function findManyUsers({ skip, take, search }) {
   return prisma.user.findMany({
-    where: { deletedAt: null },
+    where: buildSearchWhere(search),
     include: { role: true },
     orderBy: { createdAt: "desc" },
     skip,
@@ -10,8 +24,8 @@ export function findManyUsers({ skip, take }) {
   });
 }
 
-export function countUsers() {
-  return prisma.user.count({ where: { deletedAt: null } });
+export function countUsers(search) {
+  return prisma.user.count({ where: buildSearchWhere(search) });
 }
 
 export function findUserById(id) {

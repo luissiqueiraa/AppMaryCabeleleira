@@ -1,27 +1,18 @@
-import { useState } from "react";
 import Switch from "../../../shared/components/Switch";
-import { businessHours } from "../data/mockAdminSettings";
 
-export default function BusinessHoursCard({ onDirty }) {
-  const [hours, setHours] = useState(businessHours);
-
+export default function BusinessHoursCard({ hours, onChange }) {
   function toggleDay(id) {
-    setHours((prev) => prev.map((day) => (day.id === id ? { ...day, enabled: !day.enabled } : day)));
-    onDirty?.();
+    onChange(hours.map((day) => (day.id === id ? { ...day, enabled: !day.enabled } : day)));
   }
 
   function updateTime(id, field, value) {
-    setHours((prev) => prev.map((day) => (day.id === id ? { ...day, [field]: value } : day)));
-    onDirty?.();
+    onChange(hours.map((day) => (day.id === id ? { ...day, [field]: value } : day)));
   }
 
   function copyToAll(id) {
     const source = hours.find((day) => day.id === id);
     if (!source) return;
-    setHours((prev) =>
-      prev.map((day) => (day.id === id ? day : { ...day, open: source.open, close: source.close }))
-    );
-    onDirty?.();
+    onChange(hours.map((day) => (day.id === id ? day : { ...day, open: source.open, close: source.close })));
   }
 
   return (

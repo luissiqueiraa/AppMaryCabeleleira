@@ -4,20 +4,24 @@ import AppointmentCard from "../components/AppointmentCard";
 import ConfirmationModal from "../../../shared/components/ConfirmationModal";
 import { listAppointments, cancelAppointment } from "../../dashboard/services/appointmentService";
 import { mapAppointment } from "../../../shared/utils/mapAppointment";
+import { useAuth } from "../../../shared/contexts/useAuth";
+import { useToast } from "../../../shared/contexts/useToast";
+import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
 export default function AppointmentsPage() {
+  const { user } = useAuth();
+  const toast = useToast();
   const [appointments, setAppointments] = useState([]);
   const [loadStatus, setLoadStatus] = useState("loading");
   const [target, setTarget] = useState(null);
   const [isCancelling, setIsCancelling] = useState(false);
-  const [error, setError] = useState("");
   const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
     async function load() {
       try {
-        const { data } = await listAppointments();
+        const { data } = await listAppointments({ clientId: user.id });
         if (isMounted) {
           setAppointments(
             data.map(mapAppointment).sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt))
@@ -32,17 +36,17 @@ export default function AppointmentsPage() {
     return () => {
       isMounted = false;
     };
-  }, [refreshToken]);
+  }, [refreshToken, user.id]);
 
   async function handleConfirmCancel() {
     setIsCancelling(true);
-    setError("");
     try {
       await cancelAppointment(target.id);
+      toast.success("Agendamento cancelado.");
       setTarget(null);
       setRefreshToken((n) => n + 1);
-    } catch {
-      setError("Não foi possível cancelar agora. Tente novamente em instantes.");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Não foi possível cancelar agora. Tente novamente em instantes."));
     } finally {
       setIsCancelling(false);
     }
@@ -64,9 +68,9 @@ export default function AppointmentsPage() {
         </Link>
       </div>
 
-      {(error || loadStatus === "error") && (
+      {loadStatus === "error" && (
         <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error || "Não foi possível carregar seus agendamentos agora. Tente novamente em instantes."}
+          Não foi possível carregar seus agendamentos agora. Tente novamente em instantes.
         </p>
       )}
 

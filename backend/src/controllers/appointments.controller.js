@@ -2,8 +2,17 @@ import * as appointmentsService from "../services/appointments.service.js";
 
 export async function listAppointments(req, res, next) {
   try {
-    const appointments = await appointmentsService.listAppointments(req.user, req.query);
-    res.status(200).json({ success: true, data: appointments });
+    const result = await appointmentsService.listAppointments(req.user, req.query);
+    res.status(200).json({ success: true, data: result.items, pagination: result.pagination });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getAvailability(req, res, next) {
+  try {
+    const result = await appointmentsService.getAvailability(req.query);
+    res.status(200).json({ success: true, data: result });
   } catch (error) {
     next(error);
   }

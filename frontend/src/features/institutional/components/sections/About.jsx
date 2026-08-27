@@ -9,7 +9,7 @@ export default function About() {
     <section id="sobre" className="py-20 sm:py-28">
       <Container className="grid items-center gap-12 lg:grid-cols-2">
         <div className="relative">
-          <GradientBlock from="#eddfc8" to="#a07b52" className="h-72 sm:h-96" />
+          <GradientBlock className="h-72 sm:h-96" />
           <div className="absolute -top-4 -left-4 rounded-md border border-border bg-surface px-4 py-2 text-center shadow-lg">
             <p className="font-display text-lg font-semibold text-primary-light">2010</p>
             <p className="text-[10px] tracking-wide text-text-muted uppercase">desde</p>

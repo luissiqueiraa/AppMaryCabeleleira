@@ -1,9 +1,12 @@
 import { z } from "zod";
 
+const categoryEnum = z.enum(["hair", "nails", "makeup", "brows"]);
+
 export const createServiceSchema = {
   body: z.object({
     name: z.string().trim().min(2).max(120),
     description: z.string().trim().max(500).optional(),
+    category: categoryEnum,
     duration: z.coerce.number().int().min(5).max(600),
     price: z.coerce.number().min(0).max(100000),
   }),
@@ -14,6 +17,7 @@ export const updateServiceSchema = {
   body: z.object({
     name: z.string().trim().min(2).max(120).optional(),
     description: z.string().trim().max(500).optional(),
+    category: categoryEnum.optional(),
     duration: z.coerce.number().int().min(5).max(600).optional(),
     price: z.coerce.number().min(0).max(100000).optional(),
     active: z.boolean().optional(),

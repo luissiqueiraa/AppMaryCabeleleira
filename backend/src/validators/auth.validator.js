@@ -30,3 +30,19 @@ export const resetPasswordSchema = {
     newPassword: passwordSchema,
   }),
 };
+
+export const updateMeSchema = {
+  body: z.object({
+    fullName: z.string().trim().min(2).max(120).optional(),
+    email: emailSchema.optional(),
+    phoneNumber: z.string().trim().min(8).max(20).optional(),
+    whatsappReminders: z.boolean().optional(),
+  }),
+};
+
+export const changeMyPasswordSchema = {
+  body: z.object({
+    currentPassword: z.string().min(1, "Current password is required").max(72),
+    newPassword: passwordSchema,
+  }),
+};

@@ -1,10 +1,8 @@
-import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { FiX } from "react-icons/fi";
 import { useAuth } from "../../../shared/contexts/useAuth";
 import Sidebar from "../../dashboard/components/Sidebar";
 import DashboardHeader from "../../dashboard/components/DashboardHeader";
-import { currentUser } from "../../dashboard/data/currentUser";
 import { useBookingFlow } from "../hooks/useBookingFlow";
 import BookingHeader from "../components/BookingHeader";
 import ServiceList from "../components/ServiceList";
@@ -18,9 +16,8 @@ const TOTAL_STEPS = 4;
 
 export default function NewAppointmentPage() {
   const flow = useBookingFlow();
-  const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   async function handleLogout() {
     await logout();
@@ -46,7 +43,7 @@ export default function NewAppointmentPage() {
   return (
     <div className="lg:flex lg:h-screen lg:bg-gray-50">
       <div className="hidden lg:block">
-        <Sidebar collapsed={collapsed} onToggle={() => setCollapsed((prev) => !prev)} onLogout={handleLogout} />
+        <Sidebar onLogout={handleLogout} />
       </div>
 
       <div className="lg:flex lg:h-screen lg:flex-1 lg:flex-col lg:overflow-hidden">
@@ -54,7 +51,7 @@ export default function NewAppointmentPage() {
           <DashboardHeader
             eyebrow="Novo agendamento"
             title="Agendar horário"
-            user={currentUser}
+            user={{ name: user?.fullName ?? "" }}
             onOpenMenu={() => {}}
             headerAction={
               <Link
@@ -104,6 +101,7 @@ export default function NewAppointmentPage() {
                 selectedTime={flow.time}
                 onSelectDate={flow.selectDate}
                 onSelectTime={flow.selectTime}
+                hours={flow.hours}
                 slots={flow.slots}
                 unavailableTimes={flow.unavailableTimes}
                 isLoadingAvailability={flow.isLoadingAvailability}
@@ -124,7 +122,6 @@ export default function NewAppointmentPage() {
               notes={flow.notes}
               onNotesChange={flow.setNotes}
               isLoading={flow.status === "loading"}
-              error={flow.error}
               isComplete={flow.isComplete}
               onConfirm={flow.confirm}
               onClose={() => flow.setStep(3)}
@@ -159,6 +156,7 @@ export default function NewAppointmentPage() {
                   selectedTime={flow.time}
                   onSelectDate={flow.selectDate}
                   onSelectTime={flow.selectTime}
+                  hours={flow.hours}
                   slots={flow.slots}
                   unavailableTimes={flow.unavailableTimes}
                   isLoadingAvailability={flow.isLoadingAvailability}
@@ -172,7 +170,6 @@ export default function NewAppointmentPage() {
               dateLabel={flow.dateLabel}
               time={flow.time}
               isLoading={flow.status === "loading"}
-              error={flow.error}
               isComplete={flow.isComplete}
               onConfirm={flow.confirm}
             />

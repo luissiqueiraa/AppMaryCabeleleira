@@ -37,6 +37,9 @@ model User {
 
   avatarUrl String?
 
+  // Preferência de contato exibida em /profile/preferences.
+  whatsappReminders Boolean @default(true)
+
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
   deletedAt    DateTime?
@@ -47,6 +50,7 @@ model User {
   auditLogs           AuditLog[]
   employee            Employee?
   clientAppointments  Appointment[]  @relation("ClientAppointments")
+  notifications       Notification[]
 
   @@index([roleId])
   @@index([status])
@@ -134,6 +138,7 @@ model Service {
   id          String    @id @default(uuid())
   name        String
   description String?
+  category    String // hair | nails | makeup | brows
   duration    Int // minutos
   price       Decimal   @db.Decimal(10, 2)
   active      Boolean   @default(true)
@@ -144,6 +149,7 @@ model Service {
   appointments Appointment[]
 
   @@index([active])
+  @@index([category])
   @@index([deletedAt])
   @@map("services")
 }
@@ -177,7 +183,9 @@ model Appointment {
   clientId    String
   employeeId  String?
   serviceId   String
-  status      AppointmentStatus @default(pending)
+  // Agendamento já nasce confirmado: sem etapa de aprovação manual do
+  // admin — ninguém agenda um corte sem saber se vai comparecer.
+  status      AppointmentStatus @default(confirmed)
   scheduledAt DateTime
 
   // Snapshot do Service no momento do agendamento: preço/duração podem mudar
@@ -202,6 +210,36 @@ model Appointment {
   @@index([status])
   @@index([deletedAt])
   @@map("appointments")
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String
+  title       String
+  description String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+// Linha única (singleton): sempre lida/gravada como um todo, nunca por campo
+// isolado — por isso "hours" guarda o horário de funcionamento como JSON em
+// vez de virar uma tabela filha de 7 linhas fixas.
+model SalonSettings {
+  id        String   @id @default(uuid())
+  name      String
+  address   String?
+  phone     String?
+  email     String?
+  hours     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("salonSettings")
 }
 
 // Trilha de auditoria: imutável por definição, nunca soft-deletada.

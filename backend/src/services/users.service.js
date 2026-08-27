@@ -20,11 +20,11 @@ function toUserDto(user) {
   };
 }
 
-export async function listUsers({ page, limit }) {
+export async function listUsers({ page, limit, search }) {
   const skip = (page - 1) * limit;
   const [users, total] = await Promise.all([
-    usersRepository.findManyUsers({ skip, take: limit }),
-    usersRepository.countUsers(),
+    usersRepository.findManyUsers({ skip, take: limit, search }),
+    usersRepository.countUsers(search),
   ]);
 
   return {

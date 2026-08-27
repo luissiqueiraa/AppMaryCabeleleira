@@ -7,22 +7,26 @@ import HistoryList from "../components/HistoryList";
 import ConfirmationModal from "../../../shared/components/ConfirmationModal";
 import { listAppointments, cancelAppointment } from "../services/appointmentService";
 import { mapAppointment } from "../../../shared/utils/mapAppointment";
+import { useAuth } from "../../../shared/contexts/useAuth";
+import { useToast } from "../../../shared/contexts/useToast";
+import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
-const ACTIVE_STATUSES = ["pending", "confirmed"];
+const ACTIVE_STATUSES = ["confirmed"];
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  const toast = useToast();
   const [appointments, setAppointments] = useState([]);
   const [loadStatus, setLoadStatus] = useState("loading");
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
-  const [cancelError, setCancelError] = useState("");
   const [refreshToken, setRefreshToken] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
     async function load() {
       try {
-        const { data } = await listAppointments();
+        const { data } = await listAppointments({ clientId: user.id });
         if (isMounted) {
           setAppointments(data.map(mapAppointment));
           setLoadStatus("success");
@@ -35,7 +39,7 @@ export default function DashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, [refreshToken]);
+  }, [refreshToken, user.id]);
 
   const now = new Date();
   const nextAppointment =
@@ -61,13 +65,13 @@ export default function DashboardPage() {
   async function handleConfirmCancel() {
     if (!nextAppointment) return;
     setIsCancelling(true);
-    setCancelError("");
     try {
       await cancelAppointment(nextAppointment.id);
+      toast.success("Agendamento cancelado.");
       setCancelModalOpen(false);
       setRefreshToken((n) => n + 1);
-    } catch {
-      setCancelError("Não foi possível cancelar agora. Tente novamente em instantes.");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Não foi possível cancelar agora. Tente novamente em instantes."));
     } finally {
       setIsCancelling(false);
     }
@@ -92,12 +96,6 @@ export default function DashboardPage() {
       <div className="lg:hidden">
         <QuickActions />
       </div>
-
-      {cancelError && (
-        <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {cancelError}
-        </p>
-      )}
 
       <div className="hidden gap-4 sm:grid sm:grid-cols-3">
         <KpiCard key={kpis[0].id} {...kpis[0]} />

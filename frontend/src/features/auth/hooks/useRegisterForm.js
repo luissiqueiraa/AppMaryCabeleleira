@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { register } from "../services/authService";
 import { isPasswordValid } from "../utils/passwordPolicy";
-import { maskBrazilianPhone } from "../utils/phoneMask";
+import { maskBrazilianPhone } from "../../../shared/utils/phoneMask";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_DIGITS_PATTERN = /^\d{10,11}$/;

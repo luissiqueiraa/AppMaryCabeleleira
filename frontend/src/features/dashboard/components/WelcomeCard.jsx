@@ -9,10 +9,6 @@ function WelcomeCardShell({ children }) {
         style={{ backgroundImage: "url('/fotoCabelo1.jpg')" }}
         aria-hidden="true"
       />
-      <div
-        className="pointer-events-none absolute -top-10 -right-10 h-56 w-56 rounded-full bg-white/10 blur-2xl"
-        aria-hidden="true"
-      />
       {children}
     </div>
   );

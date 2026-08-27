@@ -1,31 +1,11 @@
-import { HiSparkles } from "react-icons/hi2";
-import { resolveAssetUrl } from "../../../shared/utils/assetUrl";
-import { avatarColorFor } from "../../../shared/utils/avatarColor";
-
-export const NO_PREFERENCE = "no-preference";
+import Avatar from "../../../shared/components/Avatar";
 
 function ProfessionalAvatar({ professional, isSelected }) {
-  const avatarUrl = professional.user.avatarUrl;
   const ringClass = isSelected ? "ring-2 ring-pink-600 ring-offset-2" : "";
-
-  if (avatarUrl) {
-    return (
-      <img
-        src={resolveAssetUrl(avatarUrl)}
-        alt=""
-        aria-hidden="true"
-        className={`h-16 w-16 rounded-full object-cover ${ringClass}`}
-      />
-    );
-  }
-
-  const { from, to } = avatarColorFor(professional.id);
   return (
-    <span
-      className={`h-16 w-16 rounded-full ${ringClass}`}
-      style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}
-      aria-hidden="true"
-    />
+    <span className={`inline-flex rounded-full ${ringClass}`}>
+      <Avatar name={professional.user.fullName} avatarUrl={professional.user.avatarUrl} size="lg" />
+    </span>
   );
 }
 
@@ -54,31 +34,7 @@ export default function ProfessionalList({ professionals, isLoading, selectedId,
       {isLoading ? (
         <p className="mt-4 text-sm text-gray-500">Carregando profissionais...</p>
       ) : (
-        <ul className="mt-4 flex gap-4 overflow-x-auto pb-1">
-          <li className="shrink-0">
-            <button
-              type="button"
-              onClick={() => onSelect(NO_PREFERENCE)}
-              aria-pressed={selectedId === NO_PREFERENCE}
-              className="flex w-20 flex-col items-center gap-2 text-center"
-            >
-              <span
-                className={`flex h-16 w-16 items-center justify-center rounded-full bg-pink-50 text-pink-500 ${
-                  selectedId === NO_PREFERENCE ? "ring-2 ring-pink-600 ring-offset-2" : ""
-                }`}
-              >
-                <HiSparkles size={22} aria-hidden="true" />
-              </span>
-              <span
-                className={`text-xs font-semibold ${
-                  selectedId === NO_PREFERENCE ? "text-pink-600" : "text-gray-700"
-                }`}
-              >
-                Sem preferência
-              </span>
-            </button>
-          </li>
-
+        <ul className="mt-4 flex flex-wrap gap-4">
           {professionals.map((professional) => {
             const isSelected = professional.id === selectedId;
             return (

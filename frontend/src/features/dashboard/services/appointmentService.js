@@ -5,6 +5,11 @@ export async function listAppointments(params = {}) {
   return data;
 }
 
+export async function getAvailability(params) {
+  const { data } = await api.get("/v1/appointments/availability", { params });
+  return data;
+}
+
 export async function getAppointment(id) {
   const { data } = await api.get(`/v1/appointments/${id}`);
   return data;

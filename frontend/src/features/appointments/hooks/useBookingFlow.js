@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { listServices } from "../services/serviceCatalogService";
 import { listEmployees } from "../../employees/services/employeeService";
-import { NO_PREFERENCE } from "../components/ProfessionalList";
-import { createAppointment, listAppointments } from "../../dashboard/services/appointmentService";
-import { generateDaySlots, computeUnavailableTimes } from "../utils/availability";
+import { createAppointment, getAvailability } from "../../dashboard/services/appointmentService";
+import { getSettings } from "../../../shared/services/settingsService";
+import { generateDaySlots, computeUnavailableTimes, findDayHours } from "../utils/availability";
 import { toLocalIsoDate } from "../../../shared/utils/formatDate";
+import { useToast } from "../../../shared/contexts/useToast";
+import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
 function formatDateLabel(iso) {
   const date = new Date(`${iso}T00:00:00`);
@@ -17,9 +19,11 @@ function formatDateLabel(iso) {
 
 export function useBookingFlow() {
   const navigate = useNavigate();
+  const toast = useToast();
   const [step, setStep] = useState(1);
   const [services, setServices] = useState([]);
   const [professionals, setProfessionals] = useState([]);
+  const [hours, setHours] = useState([]);
   const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
   const [catalogError, setCatalogError] = useState(false);
   const [serviceId, setServiceId] = useState(null);
@@ -29,16 +33,16 @@ export function useBookingFlow() {
   const [payOnSite, setPayOnSite] = useState(true);
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("idle");
-  const [error, setError] = useState("");
   const [availabilityResult, setAvailabilityResult] = useState({ key: null, unavailableTimes: new Set() });
 
   useEffect(() => {
     let isMounted = true;
-    Promise.all([listServices(), listEmployees()])
-      .then(([servicesRes, employeesRes]) => {
+    Promise.all([listServices(), listEmployees(), getSettings()])
+      .then(([servicesRes, employeesRes, settingsRes]) => {
         if (!isMounted) return;
         setServices(servicesRes.data);
         setProfessionals(employeesRes.data);
+        setHours(settingsRes.data.hours);
         setIsLoadingCatalog(false);
       })
       .catch(() => {
@@ -53,27 +57,21 @@ export function useBookingFlow() {
   }, []);
 
   const service = services.find((item) => item.id === serviceId) ?? null;
-  const professional =
-    professionalId && professionalId !== NO_PREFERENCE
-      ? professionals.find((item) => item.id === professionalId)
-      : null;
-  const professionalName =
-    professionalId === NO_PREFERENCE ? "a profissional disponível" : professional?.user.fullName;
+  const professional = professionalId ? professionals.find((item) => item.id === professionalId) : null;
+  const professionalName = professional?.user.fullName;
 
-  const slots = generateDaySlots();
-  const hasSpecificProfessional = Boolean(date && professionalId && professionalId !== NO_PREFERENCE);
-  const availabilityKey = hasSpecificProfessional ? `${professionalId}|${date}` : null;
+  const slots = generateDaySlots(findDayHours(hours, date));
+  const availabilityKey = date && professionalId ? `${professionalId}|${date}` : null;
 
   useEffect(() => {
     if (!availabilityKey) return;
     let isMounted = true;
-    listAppointments({ employeeId: professionalId, date })
+    getAvailability({ employeeId: professionalId, date })
       .then(({ data }) => {
         if (!isMounted) return;
-        const active = data.filter((item) => item.status === "pending" || item.status === "confirmed");
         setAvailabilityResult({
           key: availabilityKey,
-          unavailableTimes: computeUnavailableTimes({ date, slots, bookedAppointments: active, durationMinutes: service?.duration }),
+          unavailableTimes: computeUnavailableTimes({ date, slots, bookedAppointments: data, durationMinutes: service?.duration }),
         });
       })
       .catch(() => {
@@ -105,20 +103,19 @@ export function useBookingFlow() {
 
   async function confirm() {
     setStatus("loading");
-    setError("");
     try {
       const scheduledAt = new Date(`${date}T${time}:00`).toISOString();
       await createAppointment({
         serviceId,
-        employeeId: professionalId === NO_PREFERENCE ? null : professionalId,
+        employeeId: professionalId,
         scheduledAt,
         payOnSite,
         notes: notes || undefined,
       });
       setStatus("success");
-    } catch {
+    } catch (err) {
       setStatus("error");
-      setError("Não foi possível confirmar agora. Tente novamente em instantes.");
+      toast.error(getErrorMessage(err, "Não foi possível confirmar agora. Tente novamente em instantes."));
     }
   }
 
@@ -128,6 +125,7 @@ export function useBookingFlow() {
     goBack,
     services,
     professionals,
+    hours,
     isLoadingCatalog,
     catalogError,
     service,
@@ -141,7 +139,6 @@ export function useBookingFlow() {
     notes,
     isComplete,
     status,
-    error,
     slots,
     unavailableTimes,
     isLoadingAvailability,

@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import KpiCard from "../../dashboard/components/KpiCard";
-import AppointmentsChart from "../components/AppointmentsChart";
 import UpcomingAppointmentsTable from "../components/UpcomingAppointmentsTable";
+import CompletedAppointmentsHistory from "../components/CompletedAppointmentsHistory";
 import { listAppointments } from "../../dashboard/services/appointmentService";
 import { updateAppointmentStatus } from "../services/adminAppointmentService";
 import { mapAppointment } from "../../../shared/utils/mapAppointment";
 import { formatBRL } from "../../../shared/utils/formatCurrency";
 import { toLocalIsoDate as isoDate } from "../../../shared/utils/formatDate";
-
-const DAYS_BACK = 13;
+import { useToast } from "../../../shared/contexts/useToast";
+import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
 function startOfDay(date) {
   const copy = new Date(date);
@@ -17,6 +17,7 @@ function startOfDay(date) {
 }
 
 export default function AdminDashboardPage() {
+  const toast = useToast();
   const [appointments, setAppointments] = useState([]);
   const [loadStatus, setLoadStatus] = useState("loading");
   const [refreshToken, setRefreshToken] = useState(0);
@@ -24,11 +25,8 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     let isMounted = true;
     async function load() {
-      const today = startOfDay(new Date());
-      const from = isoDate(new Date(today.getTime() - DAYS_BACK * 24 * 60 * 60 * 1000));
+      const from = isoDate(startOfDay(new Date()));
       try {
-        // Sem "to": cobre o histórico (para o gráfico) e também qualquer
-        // agendamento futuro (para "Próximos atendimentos"), sem limite superior.
         const { data } = await listAppointments({ from });
         if (isMounted) {
           setAppointments(data.map(mapAppointment));
@@ -47,9 +45,10 @@ export default function AdminDashboardPage() {
   async function handleStatusChange(id, status) {
     try {
       await updateAppointmentStatus(id, status);
+      toast.success(status === "completed" ? "Atendimento concluído." : "Agendamento atualizado.");
       setRefreshToken((n) => n + 1);
-    } catch {
-      // silencioso: a linha simplesmente não muda; usuário pode tentar de novo
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Não foi possível atualizar agora. Tente novamente em instantes."));
     }
   }
 
@@ -73,17 +72,8 @@ export default function AdminDashboardPage() {
   const adminKpis = [
     { id: "today", label: "Agendamentos hoje", value: String(todayAppointments.length) },
     { id: "confirmed", label: "Confirmados", value: String(confirmedToday.length) },
-    { id: "revenue", label: "Receita prevista", value: formatBRL(revenueToday) },
+    { id: "revenue", label: "Recebido", value: formatBRL(revenueToday) },
   ];
-
-  const dailyAppointments = Array.from({ length: DAYS_BACK + 1 }, (_, index) => {
-    const day = new Date(startOfDay(new Date()).getTime() - (DAYS_BACK - index) * 24 * 60 * 60 * 1000);
-    const dayIso = isoDate(day);
-    const value = appointments.filter(
-      (item) => isoDate(new Date(item.scheduledAt)) === dayIso && item.status !== "cancelled"
-    ).length;
-    return { day: String(day.getDate()).padStart(2, "0"), value };
-  });
 
   const now = new Date();
   const upcomingAppointments = appointments
@@ -98,7 +88,7 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
-      <AppointmentsChart dailyAppointments={dailyAppointments} />
+      <CompletedAppointmentsHistory />
 
       <UpcomingAppointmentsTable appointments={upcomingAppointments} onStatusChange={handleStatusChange} />
     </div>

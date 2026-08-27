@@ -1,15 +1,11 @@
-import { useState } from "react";
 import { FiPhone, FiMail, FiMapPin, FiImage } from "react-icons/fi";
 import FormField from "../../../shared/components/FormField";
-import { salonIdentity } from "../data/mockAdminSettings";
+import { maskBrazilianPhone } from "../../../shared/utils/phoneMask";
 
-export default function SalonIdentityCard({ onDirty }) {
-  const [values, setValues] = useState(salonIdentity);
-
+export default function SalonIdentityCard({ values, onChange }) {
   function handleChange(event) {
     const { name, value } = event.target;
-    setValues((prev) => ({ ...prev, [name]: value }));
-    onDirty?.();
+    onChange({ [name]: name === "phone" ? maskBrazilianPhone(value) : value });
   }
 
   return (
@@ -33,7 +29,7 @@ export default function SalonIdentityCard({ onDirty }) {
               id="salon-name"
               name="name"
               label="Nome do salão"
-              inputProps={{ value: values.name, onChange: handleChange }}
+              inputProps={{ value: values.name ?? "", onChange: handleChange }}
             />
           </div>
 
@@ -43,7 +39,7 @@ export default function SalonIdentityCard({ onDirty }) {
               name="address"
               label="Endereço"
               icon={FiMapPin}
-              inputProps={{ value: values.address, onChange: handleChange }}
+              inputProps={{ value: values.address ?? "", onChange: handleChange }}
             />
           </div>
 
@@ -53,7 +49,7 @@ export default function SalonIdentityCard({ onDirty }) {
             label="Telefone"
             type="tel"
             icon={FiPhone}
-            inputProps={{ value: values.phone, onChange: handleChange }}
+            inputProps={{ value: values.phone ?? "", onChange: handleChange }}
           />
           <FormField
             id="salon-email"
@@ -61,7 +57,7 @@ export default function SalonIdentityCard({ onDirty }) {
             label="Email"
             type="email"
             icon={FiMail}
-            inputProps={{ value: values.email, onChange: handleChange }}
+            inputProps={{ value: values.email ?? "", onChange: handleChange }}
           />
         </div>
       </div>

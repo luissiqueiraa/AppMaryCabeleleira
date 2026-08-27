@@ -22,3 +22,26 @@ export function authorize(...requiredPermissions) {
     next();
   };
 }
+
+// Variante "OR" de authorize: passa se o ator tiver QUALQUER uma das
+// permissions listadas (ex: manage_users OU a permission mais restrita
+// view_clients, ambas destravando o mesmo endpoint de leitura).
+export function authorizeAny(...permissions) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return next(new AppError("Authentication required", 401));
+    }
+
+    if (req.user.role === "owner") {
+      return next();
+    }
+
+    const hasAnyPermission = permissions.some((permission) => req.user.permissions.includes(permission));
+
+    if (!hasAnyPermission) {
+      return next(new AppError("Insufficient permissions", 403));
+    }
+
+    next();
+  };
+}

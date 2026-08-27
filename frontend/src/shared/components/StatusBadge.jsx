@@ -1,6 +1,6 @@
+// Agendamento confirmado (o padrão, sem etapa de aprovação) não tem badge
+// próprio — só vira visível quando chega num estado que importa destacar.
 const STATUS_MAP = {
-  pending: { label: "Pendente", className: "bg-amber-50 text-amber-700" },
-  confirmed: { label: "Confirmado", className: "bg-emerald-50 text-emerald-700" },
   completed: { label: "Finalizado", className: "bg-purple-50 text-purple-700" },
   cancelled: { label: "Cancelado", className: "bg-red-50 text-red-600" },
   active: { label: "Ativo", className: "bg-emerald-50 text-emerald-700" },
@@ -8,7 +8,8 @@ const STATUS_MAP = {
 };
 
 export default function StatusBadge({ status }) {
-  const config = STATUS_MAP[status] ?? STATUS_MAP.pending;
+  const config = STATUS_MAP[status];
+  if (!config) return null;
 
   return (
     <span

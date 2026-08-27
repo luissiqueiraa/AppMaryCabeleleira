@@ -2,13 +2,11 @@ import Container from "../ui/Container";
 import Button from "../ui/Button";
 import Badge from "../ui/Badge";
 import GradientBlock from "../ui/GradientBlock";
-import GlowOrbs from "../ui/GlowOrbs";
 import { heroStats } from "../../data/stats";
 
 export default function Hero() {
   return (
     <section id="hero" className="relative overflow-hidden py-16 sm:py-24">
-      <GlowOrbs />
       <Container className="relative grid items-center gap-12 lg:grid-cols-2">
         <div>
           <Badge>Salão premium capilar</Badge>
@@ -46,9 +44,9 @@ export default function Hero() {
 
         <div className="relative hidden sm:block" aria-hidden="true">
           <div className="grid grid-cols-2 gap-4 pb-10">
-            <GradientBlock from="#f2b8d2" to="#7a1b4d" className="h-48 w-3/4" />
-            <GradientBlock from="#1c1014" to="#2e1b22" className="h-36 translate-y-6" />
-            <GradientBlock from="#eddfc8" to="#a07b52" className="col-span-2 h-40" />
+            <GradientBlock className="h-48 w-3/4" />
+            <GradientBlock className="h-36 translate-y-6" />
+            <GradientBlock className="col-span-2 h-40" />
           </div>
 
           <div className="absolute bottom-0 left-0 w-56 rounded-lg border border-border bg-surface/90 p-4 text-center shadow-xl backdrop-blur-md">

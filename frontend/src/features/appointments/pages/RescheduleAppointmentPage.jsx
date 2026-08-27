@@ -1,30 +1,36 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import DateTimeSection from "../components/DateTimeSection";
-import { getAppointment, rescheduleAppointment, listAppointments } from "../../dashboard/services/appointmentService";
-import { generateDaySlots, computeUnavailableTimes } from "../utils/availability";
+import { getAppointment, rescheduleAppointment, getAvailability } from "../../dashboard/services/appointmentService";
+import { getSettings } from "../../../shared/services/settingsService";
+import { generateDaySlots, computeUnavailableTimes, findDayHours } from "../utils/availability";
 import { toLocalIsoDate } from "../../../shared/utils/formatDate";
+import { useToast } from "../../../shared/contexts/useToast";
+import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
 const NON_RESCHEDULABLE_STATUSES = ["completed", "cancelled"];
 
 export default function RescheduleAppointmentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [appointment, setAppointment] = useState(null);
+  const [hours, setHours] = useState([]);
   const [loadStatus, setLoadStatus] = useState("loading");
   const [date, setDate] = useState(null);
   const [time, setTime] = useState(null);
   const [availabilityResult, setAvailabilityResult] = useState({ key: null, unavailableTimes: new Set() });
   const [submitStatus, setSubmitStatus] = useState("idle");
-  const [error, setError] = useState("");
 
-  const slots = generateDaySlots();
+  const slots = generateDaySlots(findDayHours(hours, date));
 
   useEffect(() => {
-    getAppointment(id)
-      .then(({ data }) => {
+    Promise.all([getAppointment(id), getSettings()])
+      .then(([appointmentRes, settingsRes]) => {
+        const data = appointmentRes.data;
         setAppointment(data);
+        setHours(settingsRes.data.hours);
         const scheduled = new Date(data.scheduledAt);
         setDate(toLocalIsoDate(scheduled));
         setTime(scheduled.toTimeString().slice(0, 5));
@@ -39,15 +45,12 @@ export default function RescheduleAppointmentPage() {
   useEffect(() => {
     if (!availabilityKey) return;
     let isMounted = true;
-    listAppointments({ employeeId: appointment.employee.id, date })
+    getAvailability({ employeeId: appointment.employee.id, date, excludeId: appointment.id })
       .then(({ data }) => {
         if (!isMounted) return;
-        const active = data.filter(
-          (item) => item.id !== appointment.id && (item.status === "pending" || item.status === "confirmed")
-        );
         setAvailabilityResult({
           key: availabilityKey,
-          unavailableTimes: computeUnavailableTimes({ date, slots, bookedAppointments: active, durationMinutes: appointment.durationMinutes }),
+          unavailableTimes: computeUnavailableTimes({ date, slots, bookedAppointments: data, durationMinutes: appointment.durationMinutes }),
         });
       })
       .catch(() => {
@@ -68,14 +71,14 @@ export default function RescheduleAppointmentPage() {
 
   async function handleSubmit() {
     setSubmitStatus("loading");
-    setError("");
     try {
       const scheduledAt = new Date(`${date}T${time}:00`).toISOString();
       await rescheduleAppointment(id, { scheduledAt });
+      toast.success("Agendamento remarcado com sucesso.");
       navigate(`/appointments/${id}`);
-    } catch {
+    } catch (err) {
       setSubmitStatus("error");
-      setError("Não foi possível remarcar agora. Tente novamente em instantes.");
+      toast.error(getErrorMessage(err, "Não foi possível remarcar agora. Tente novamente em instantes."));
     }
   }
 
@@ -125,16 +128,11 @@ export default function RescheduleAppointmentPage() {
           setTime(null);
         }}
         onSelectTime={setTime}
+        hours={hours}
         slots={slots}
         unavailableTimes={unavailableTimes}
         isLoadingAvailability={isLoadingAvailability}
       />
-
-      {error && (
-        <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
 
       <div className="flex gap-3">
         <button

@@ -87,6 +87,14 @@ export function updateUserAvatar(userId, avatarUrl) {
   return prisma.user.update({ where: { id: userId }, data: { avatarUrl }, include: { role: true } });
 }
 
+export function updateUserProfile(userId, data) {
+  return prisma.user.update({ where: { id: userId }, data, include: { role: true } });
+}
+
+export function softDeleteUser(userId) {
+  return prisma.user.update({ where: { id: userId }, data: { deletedAt: new Date() } });
+}
+
 export function resetPasswordAndClearToken(userId, passwordHash) {
   return prisma.user.update({
     where: { id: userId },

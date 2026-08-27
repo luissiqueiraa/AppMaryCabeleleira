@@ -7,6 +7,7 @@ function toServiceDto(service) {
     id: service.id,
     name: service.name,
     description: service.description,
+    category: service.category,
     duration: service.duration,
     price: Number(service.price),
     active: service.active,
@@ -48,4 +49,20 @@ export async function updateService(id, payload, req) {
     req,
   });
   return toServiceDto(updated);
+}
+
+export async function deleteService(id, req) {
+  const service = await servicesRepository.findServiceById(id);
+  if (!service) {
+    throw new AppError("Service not found", 404);
+  }
+
+  await servicesRepository.deleteService(id);
+  await recordAuditLog({
+    userId: req.user.id,
+    action: "service.delete",
+    entity: "Service",
+    entityId: id,
+    req,
+  });
 }

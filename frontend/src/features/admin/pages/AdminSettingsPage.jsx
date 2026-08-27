@@ -1,26 +1,81 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SalonIdentityCard from "../components/SalonIdentityCard";
 import BusinessHoursCard from "../components/BusinessHoursCard";
 import UnsavedChangesToast from "../../../shared/components/UnsavedChangesToast";
+import { getSettings, updateSettings } from "../../../shared/services/settingsService";
 import { settingsTabs } from "../data/mockAdminSettings";
+import { useToast } from "../../../shared/contexts/useToast";
+import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
 const PLACEHOLDER_TABS = settingsTabs.filter((tab) => tab.id !== "salao" && tab.id !== "hours");
 
 export default function AdminSettingsPage() {
-  const [dirty, setDirty] = useState(false);
+  const toast = useToast();
+  const [settings, setSettings] = useState(null);
+  const [draft, setDraft] = useState(null);
+  const [loadStatus, setLoadStatus] = useState("loading");
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    getSettings()
+      .then(({ data }) => {
+        setSettings(data);
+        setDraft(data);
+        setLoadStatus("success");
+      })
+      .catch(() => setLoadStatus("error"));
+  }, []);
+
+  const dirty = settings && draft ? JSON.stringify(settings) !== JSON.stringify(draft) : false;
+
+  function updateDraft(patch) {
+    setDraft((prev) => ({ ...prev, ...patch }));
+  }
+
+  function updateHours(hours) {
+    setDraft((prev) => ({ ...prev, hours }));
+  }
 
   async function handleSave() {
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    setIsSaving(false);
-    setDirty(false);
+    try {
+      const { data } = await updateSettings({
+        name: draft.name,
+        address: draft.address,
+        phone: draft.phone,
+        email: draft.email,
+        hours: draft.hours,
+      });
+      setSettings(data);
+      setDraft(data);
+      toast.success("Configurações salvas com sucesso.");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Não foi possível salvar agora. Tente novamente em instantes."));
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  function handleDiscard() {
+    setDraft(settings);
+  }
+
+  if (loadStatus === "loading") {
+    return <p className="text-sm text-gray-500">Carregando...</p>;
+  }
+
+  if (loadStatus === "error" || !draft) {
+    return (
+      <p role="alert" className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        Não foi possível carregar as configurações agora. Tente novamente em instantes.
+      </p>
+    );
   }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-16">
-      <SalonIdentityCard onDirty={() => setDirty(true)} />
-      <BusinessHoursCard onDirty={() => setDirty(true)} />
+      <SalonIdentityCard values={draft} onChange={updateDraft} />
+      <BusinessHoursCard hours={draft.hours} onChange={updateHours} />
 
       {PLACEHOLDER_TABS.map((tab) => (
         <p
@@ -35,7 +90,7 @@ export default function AdminSettingsPage() {
         visible={dirty}
         isSaving={isSaving}
         onSave={handleSave}
-        onDismiss={() => setDirty(false)}
+        onDismiss={handleDiscard}
       />
     </div>
   );

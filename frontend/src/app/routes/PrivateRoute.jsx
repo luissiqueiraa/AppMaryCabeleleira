@@ -1,18 +1,13 @@
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "../../shared/contexts/useAuth";
-import { ROLES } from "../../shared/constants/roles";
-
-const ROLE_HOME_ROUTE = {
-  [ROLES.OWNER]: "/admin",
-  [ROLES.ADMIN]: "/admin",
-  [ROLES.CLIENT]: "/dashboard",
-};
+import { ROLE_HOME_ROUTE } from "../../shared/constants/roleHomeRoutes";
+import LoadingScreen from "../../shared/components/LoadingScreen";
 
 export default function PrivateRoute({ allowedRoles }) {
   const { user, isAuthenticated, isBootstrapping } = useAuth();
 
   if (isBootstrapping) {
-    return <div className="flex min-h-screen items-center justify-center bg-bg" />;
+    return <LoadingScreen />;
   }
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;

@@ -25,7 +25,7 @@ export default function ServiceList({ services, isLoading, selectedId, onSelect 
                   }`}
                 >
                   <img
-                    src="/Mary_Cabelereira.jpeg"
+                    src="/Mary_Cabelereira.png"
                     alt=""
                     aria-hidden="true"
                     className="h-14 w-14 shrink-0 rounded-lg object-cover"

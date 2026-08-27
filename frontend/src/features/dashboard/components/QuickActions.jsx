@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
-import { HiSparkles } from "react-icons/hi2";
-import { FiScissors, FiMapPin } from "react-icons/fi";
+import { FiScissors, FiMapPin, FiCalendar } from "react-icons/fi";
 import { quickActions } from "../data/mockDashboard";
 
-const ICONS = { sparkle: HiSparkles, scissors: FiScissors, pin: FiMapPin };
+const ICONS = { calendar: FiCalendar, scissors: FiScissors, pin: FiMapPin };
 
 export default function QuickActions() {
   return (

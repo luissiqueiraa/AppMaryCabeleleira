@@ -1,4 +1,6 @@
-import { FiBell, FiMenu, FiUser } from "react-icons/fi";
+import { FiMenu } from "react-icons/fi";
+import NotificationBell from "./NotificationBell";
+import Avatar from "../../../shared/components/Avatar";
 
 export default function DashboardHeader({
   title,
@@ -31,22 +33,10 @@ export default function DashboardHeader({
         <div className="ml-auto flex items-center gap-3">
           {mobileAction && <span className="lg:hidden">{mobileAction}</span>}
 
-          <button
-            type="button"
-            aria-label="Notificações"
-            className={`relative flex h-10 w-10 items-center justify-center text-gray-500 hover:text-gray-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-600 ${
-              mobileAction ? "hidden lg:flex" : ""
-            }`}
-          >
-            <FiBell size={18} aria-hidden="true" />
-            <span className="absolute top-2 right-2.5 h-1.5 w-1.5 rounded-full bg-pink-500" aria-hidden="true" />
-          </button>
+          <NotificationBell className={mobileAction ? "hidden lg:flex" : ""} />
 
-          <div
-            className="hidden h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-500 lg:flex"
-            aria-label={`Conta de ${user.name}`}
-          >
-            <FiUser size={18} aria-hidden="true" />
+          <div className="hidden lg:flex" aria-label={`Conta de ${user.name}`}>
+            <Avatar name={user.name} avatarUrl={user.avatarUrl} size="md" />
           </div>
 
           {headerAction && <span className="hidden lg:block">{headerAction}</span>}

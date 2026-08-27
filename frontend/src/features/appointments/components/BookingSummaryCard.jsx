@@ -10,17 +10,12 @@ export default function BookingSummaryCard({
   dateLabel,
   time,
   isLoading,
-  error,
   isComplete,
   onConfirm,
 }) {
   return (
     <section aria-label="Resumo do agendamento" className="lg:sticky lg:top-6">
-      <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-pink-400 via-pink-600 to-fuchsia-800 p-6 text-white">
-        <div
-          className="pointer-events-none absolute -top-10 -right-10 h-40 w-40 rounded-full bg-white/10 blur-2xl"
-          aria-hidden="true"
-        />
+      <div className="relative overflow-hidden rounded-lg bg-pink-600 p-6 text-white">
         <p className="text-xs font-semibold tracking-[0.2em] text-white/80 uppercase">Resumo</p>
         <h3 className="font-display mt-2 text-2xl font-semibold">
           {service ? service.name : "Selecione um serviço"}
@@ -56,12 +51,6 @@ export default function BookingSummaryCard({
         </div>
       </dl>
 
-      {error && (
-        <p role="alert" className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {error}
-        </p>
-      )}
-
       <button
         type="button"
         onClick={onConfirm}
@@ -71,10 +60,6 @@ export default function BookingSummaryCard({
         <FiCheck aria-hidden="true" />
         {isLoading ? "Confirmando..." : "Confirmar agendamento"}
       </button>
-
-      <p className="mt-3 text-center text-xs text-gray-400">
-        Cancele gratuitamente até 4h antes do horário.
-      </p>
     </section>
   );
 }

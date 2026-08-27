@@ -12,6 +12,7 @@ import {
   rescheduleAppointmentSchema,
   cancelAppointmentSchema,
   updateAppointmentStatusSchema,
+  availabilitySchema,
 } from "../validators/appointments.validator.js";
 
 const router = Router();
@@ -20,6 +21,9 @@ router.use(authenticate);
 const getAppointmentOwnerId = (req) => appointmentsService.getAppointmentOwnerId(req.params.id);
 
 router.get("/", validateRequest(listAppointmentsSchema), appointmentsController.listAppointments);
+
+// Antes de "/:id" — senão "availability" seria interpretado como um id.
+router.get("/availability", validateRequest(availabilitySchema), appointmentsController.getAvailability);
 
 router.get(
   "/:id",

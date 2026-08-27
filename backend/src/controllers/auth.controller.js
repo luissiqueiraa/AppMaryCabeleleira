@@ -91,6 +91,33 @@ export async function updateMyAvatar(req, res, next) {
   }
 }
 
+export async function updateMe(req, res, next) {
+  try {
+    const user = await authService.updateMe(req.user.id, req.body, req);
+    res.status(200).json({ success: true, data: user });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function changeMyPassword(req, res, next) {
+  try {
+    const result = await authService.changeMyPassword(req.user.id, req.body, req);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteMe(req, res, next) {
+  try {
+    const result = await authService.deleteMe(req.user.id, req);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
 export async function forgotPassword(req, res, next) {
   try {
     const result = await authService.forgotPassword(req.body.email, req);

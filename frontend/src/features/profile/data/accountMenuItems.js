@@ -1,4 +1,4 @@
-import { FiUser, FiLock, FiPhone, FiBell, FiHeart, FiTrash2, FiLogOut } from "react-icons/fi";
+import { FiUser, FiLock, FiPhone, FiHeart, FiTrash2, FiLogOut } from "react-icons/fi";
 
 export function getAccountMenuItems(onLogout) {
   return [
@@ -19,13 +19,6 @@ export function getAccountMenuItems(onLogout) {
       description: "Altere seu número",
       icon: FiPhone,
       to: "/profile/phone",
-      badge: "Verificado",
-    },
-    {
-      label: "Notificações",
-      description: "Gerencie avisos e lembretes",
-      icon: FiBell,
-      to: "/notifications",
     },
     {
       label: "Preferências",

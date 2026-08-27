@@ -5,8 +5,11 @@ import FocusLayout from "../../layouts/FocusLayout";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import PrivateRoute from "./PrivateRoute";
 import { ROLES } from "../../shared/constants/roles";
+import LoadingScreen from "../../shared/components/LoadingScreen";
 
 import HomePage from "../../features/institutional/pages/HomePage";
+
+const NotFoundPage = lazy(() => import("../../features/notFound/pages/NotFoundPage"));
 
 const LoginPage = lazy(() => import("../../features/auth/pages/LoginPage"));
 const RegisterPage = lazy(() => import("../../features/auth/pages/RegisterPage"));
@@ -21,7 +24,6 @@ const AppointmentDetailPage = lazy(() => import("../../features/appointments/pag
 const NewAppointmentPage = lazy(() => import("../../features/appointments/pages/NewAppointmentPage"));
 const RescheduleAppointmentPage = lazy(() => import("../../features/appointments/pages/RescheduleAppointmentPage"));
 const ServiceHistoryPage = lazy(() => import("../../features/serviceHistory/pages/ServiceHistoryPage"));
-const NotificationsPage = lazy(() => import("../../features/notifications/pages/NotificationsPage"));
 const ProfilePage = lazy(() => import("../../features/profile/pages/ProfilePage"));
 const PersonalInfoPage = lazy(() => import("../../features/profile/pages/PersonalInfoPage"));
 const PreferencesPage = lazy(() => import("../../features/profile/pages/PreferencesPage"));
@@ -40,7 +42,7 @@ const AdminSettingsPage = lazy(() => import("../../features/admin/pages/AdminSet
 
 export default function AppRoutes() {
   return (
-    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-bg" />}>
+    <Suspense fallback={<LoadingScreen />}>
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<HomePage />} />
@@ -55,13 +57,12 @@ export default function AppRoutes() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
-        <Route element={<PrivateRoute allowedRoles={[ROLES.CLIENT, ROLES.OWNER, ROLES.ADMIN]} />}>
+        <Route element={<PrivateRoute allowedRoles={[ROLES.CLIENT, ROLES.OWNER, ROLES.ADMIN, ROLES.EMPLOYEE]} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
             <Route path="/service-history" element={<ServiceHistoryPage />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/personal-info" element={<PersonalInfoPage />} />
             <Route path="/profile/preferences" element={<PreferencesPage />} />
@@ -77,16 +78,23 @@ export default function AppRoutes() {
           </Route>
         </Route>
 
-        <Route element={<PrivateRoute allowedRoles={[ROLES.OWNER, ROLES.ADMIN]} />}>
+        <Route element={<PrivateRoute allowedRoles={[ROLES.OWNER, ROLES.ADMIN, ROLES.EMPLOYEE]} />}>
           <Route element={<DashboardLayout />}>
             <Route path="/admin" element={<AdminDashboardPage />} />
             <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
-            <Route path="/admin/employees" element={<EmployeesPage />} />
             <Route path="/admin/services" element={<AdminServicesPage />} />
             <Route path="/admin/clients" element={<ClientsPage />} />
+          </Route>
+        </Route>
+
+        <Route element={<PrivateRoute allowedRoles={[ROLES.OWNER, ROLES.ADMIN]} />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/admin/employees" element={<EmployeesPage />} />
             <Route path="/admin/settings" element={<AdminSettingsPage />} />
           </Route>
         </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
   );

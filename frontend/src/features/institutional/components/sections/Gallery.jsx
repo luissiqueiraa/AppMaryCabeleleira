@@ -18,13 +18,11 @@ export default function Gallery() {
 
         <div className="mt-12 grid grid-cols-2 gap-4 lg:grid-cols-3">
           <GradientBlock
-            from={featured.from}
-            to={featured.to}
             label={featured.label}
             className="col-span-2 h-64 lg:col-span-1 lg:row-span-2 lg:h-full"
           />
           {rest.map((item) => (
-            <GradientBlock key={item.label} from={item.from} to={item.to} label={item.label} className="h-40" />
+            <GradientBlock key={item.label} label={item.label} className="h-40" />
           ))}
         </div>
 

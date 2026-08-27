@@ -3,11 +3,11 @@ import { recordAuditLog } from "../utils/auditLogger.js";
 import * as appointmentsRepository from "../repositories/appointments.repository.js";
 import * as servicesRepository from "../repositories/services.repository.js";
 import * as employeesRepository from "../repositories/employees.repository.js";
+import * as notificationsService from "./notifications.service.js";
 
-const ACTIVE_STATUSES = ["pending", "confirmed"];
+const ACTIVE_STATUSES = ["confirmed"];
 
 const LEGAL_TRANSITIONS = {
-  pending: ["confirmed", "cancelled"],
   confirmed: ["completed", "cancelled"],
 };
 
@@ -77,14 +77,56 @@ export async function getAppointmentOwnerId(id) {
 export async function listAppointments(actor, query) {
   const canManage = actor.permissions.includes("manage_appointments");
   const { dateFrom, dateTo } = resolveDateRange(query);
-  const appointments = await appointmentsRepository.findAppointments({
-    clientId: canManage ? undefined : actor.id,
+  const filters = {
+    clientId: canManage ? query.clientId : actor.id,
     employeeId: query.employeeId,
     status: query.status,
     dateFrom,
     dateTo,
+    search: query.search,
+  };
+
+  if (!query.page) {
+    const appointments = await appointmentsRepository.findAppointments(filters);
+    return { items: appointments.map(toAppointmentDto), pagination: null };
+  }
+
+  const limit = query.limit ?? 20;
+  const page = query.page;
+  const [appointments, total] = await Promise.all([
+    appointmentsRepository.findAppointments({
+      ...filters,
+      skip: (page - 1) * limit,
+      take: limit,
+      order: query.order,
+    }),
+    appointmentsRepository.countAppointments(filters),
+  ]);
+
+  return {
+    items: appointments.map(toAppointmentDto),
+    pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
+}
+
+// Disponibilidade de horário é cross-cliente por natureza: qualquer cliente
+// autenticado precisa enxergar os horários ocupados de uma profissional pra
+// não marcar em cima de outra pessoa. Por isso não passa pelo scoping de
+// listAppointments (que restringe um cliente comum aos próprios agendamentos)
+// — só devolve os intervalos ocupados, sem nome/telefone/serviço de ninguém.
+export async function getAvailability({ employeeId, date, excludeId }) {
+  const dayStart = new Date(`${date}T00:00:00`);
+  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+  const appointments = await appointmentsRepository.findActiveAppointmentsForEmployeeOnDay({
+    employeeId,
+    dayStart,
+    dayEnd,
+    excludeId,
   });
-  return appointments.map(toAppointmentDto);
+  return appointments.map((item) => ({
+    scheduledAt: item.scheduledAt,
+    durationMinutes: item.durationMinutes,
+  }));
 }
 
 export async function getAppointmentById(id) {
@@ -132,6 +174,11 @@ export async function createAppointment({ serviceId, employeeId, scheduledAt, pa
     entityId: appointment.id,
     req,
   });
+  await notificationsService.notifyUser(appointment.clientId, {
+    type: "confirmation",
+    title: "Agendamento confirmado",
+    description: `${appointment.service.name} confirmado para ${appointment.scheduledAt.toLocaleDateString("pt-BR")}.`,
+  });
   return toAppointmentDto(appointment);
 }
 
@@ -168,6 +215,11 @@ export async function rescheduleAppointment(id, { scheduledAt, employeeId }, req
     entityId: id,
     req,
   });
+  await notificationsService.notifyUser(updated.clientId, {
+    type: "update",
+    title: "Agendamento remarcado",
+    description: `${updated.service.name} remarcado para ${updated.scheduledAt.toLocaleDateString("pt-BR")}.`,
+  });
   return toAppointmentDto(updated);
 }
 
@@ -187,6 +239,11 @@ export async function cancelAppointment(id, req) {
     entity: "Appointment",
     entityId: id,
     req,
+  });
+  await notificationsService.notifyUser(updated.clientId, {
+    type: "update",
+    title: "Agendamento cancelado",
+    description: `${updated.service.name} de ${updated.scheduledAt.toLocaleDateString("pt-BR")} foi cancelado.`,
   });
   return toAppointmentDto(updated);
 }
@@ -210,5 +267,14 @@ export async function updateAppointmentStatus(id, { status }, req) {
     entityId: id,
     req,
   });
+
+  if (status === "cancelled") {
+    await notificationsService.notifyUser(updated.clientId, {
+      type: "update",
+      title: "Agendamento cancelado",
+      description: `${updated.service.name} de ${updated.scheduledAt.toLocaleDateString("pt-BR")} foi cancelado.`,
+    });
+  }
+
   return toAppointmentDto(updated);
 }

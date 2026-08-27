@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
 import ScheduleToolbar from "../components/ScheduleToolbar";
 import ScheduleGrid from "../components/ScheduleGrid";
+import AppointmentDetailModal from "../components/AppointmentDetailModal";
+import ConfirmationModal from "../../../shared/components/ConfirmationModal";
 import { listEmployees } from "../../employees/services/employeeService";
-import { listAppointments } from "../../dashboard/services/appointmentService";
-import { BUSINESS_HOURS_LIST } from "../../../shared/config/businessHours";
+import { listAppointments, cancelAppointment } from "../../dashboard/services/appointmentService";
+import { updateAppointmentStatus } from "../services/adminAppointmentService";
+import { getSettings } from "../../../shared/services/settingsService";
+import { hourRangeForDay, findDayHours } from "../../appointments/utils/availability";
 import { formatFullDate, toLocalIsoDate as isoDate } from "../../../shared/utils/formatDate";
+import { useToast } from "../../../shared/contexts/useToast";
+import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
 function addDays(iso, amount) {
   const date = new Date(`${iso}T00:00:00`);
@@ -13,21 +19,30 @@ function addDays(iso, amount) {
 }
 
 export default function AdminAppointmentsPage() {
-  const [view, setView] = useState("day");
+  const toast = useToast();
   const [selectedDate, setSelectedDate] = useState(() => isoDate(new Date()));
   const [professionals, setProfessionals] = useState([]);
   const [events, setEvents] = useState([]);
+  const [hours, setHours] = useState([]);
   const [loadStatus, setLoadStatus] = useState("loading");
+  const [refreshToken, setRefreshToken] = useState(0);
+
+  const [detailTarget, setDetailTarget] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [cancelTarget, setCancelTarget] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
     async function load() {
       try {
-        const [employeesRes, appointmentsRes] = await Promise.all([
+        const [employeesRes, appointmentsRes, settingsRes] = await Promise.all([
           listEmployees(),
           listAppointments({ date: selectedDate }),
+          getSettings(),
         ]);
         if (!isMounted) return;
+
+        setHours(settingsRes.data.hours);
 
         const activeAppointments = appointmentsRes.data.filter((item) => item.status !== "cancelled");
         const countByEmployee = activeAppointments.reduce((acc, item) => {
@@ -54,6 +69,14 @@ export default function AdminAppointmentsPage() {
                 employeeId: item.employee.id,
                 service: item.service.name,
                 client: item.client.fullName,
+                phone: item.client.phoneNumber,
+                professional: item.employee.fullName,
+                status: item.status,
+                notes: item.notes,
+                price: item.price,
+                scheduledAt: item.scheduledAt,
+                durationMinutes: item.durationMinutes,
+                date: isoDate(scheduled),
                 startHour: scheduled.getHours(),
                 rowSpan: Math.max(1, Math.round(item.durationMinutes / 60)),
               };
@@ -69,7 +92,36 @@ export default function AdminAppointmentsPage() {
     return () => {
       isMounted = false;
     };
-  }, [selectedDate]);
+  }, [selectedDate, refreshToken]);
+
+  async function handleStatusChange(id, status) {
+    setIsUpdating(true);
+    try {
+      await updateAppointmentStatus(id, status);
+      toast.success(status === "completed" ? "Atendimento concluído." : "Agendamento atualizado.");
+      setDetailTarget(null);
+      setRefreshToken((n) => n + 1);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Não foi possível atualizar agora. Tente novamente em instantes."));
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
+  async function handleConfirmCancel() {
+    setIsUpdating(true);
+    try {
+      await cancelAppointment(cancelTarget);
+      toast.success("Agendamento cancelado.");
+      setCancelTarget(null);
+      setDetailTarget(null);
+      setRefreshToken((n) => n + 1);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Não foi possível cancelar agora. Tente novamente em instantes."));
+    } finally {
+      setIsUpdating(false);
+    }
+  }
 
   if (loadStatus === "error") {
     return (
@@ -79,11 +131,12 @@ export default function AdminAppointmentsPage() {
     );
   }
 
+  const dayHours = findDayHours(hours, selectedDate);
+  const hourRange = hourRangeForDay(dayHours);
+
   return (
     <div className="space-y-4">
       <ScheduleToolbar
-        view={view}
-        onChangeView={setView}
         dateLabel={formatFullDate(selectedDate)}
         onPrevDay={() => setSelectedDate((prev) => addDays(prev, -1))}
         onNextDay={() => setSelectedDate((prev) => addDays(prev, 1))}
@@ -92,13 +145,37 @@ export default function AdminAppointmentsPage() {
 
       {loadStatus === "loading" ? (
         <p className="text-sm text-gray-500">Carregando...</p>
-      ) : view === "day" ? (
-        <ScheduleGrid professionals={professionals} hours={BUSINESS_HOURS_LIST} events={events} />
-      ) : (
+      ) : hourRange.length === 0 ? (
         <p className="rounded-lg border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
-          Visão por {view === "week" ? "semana" : "mês"} em breve.
+          O salão não abre nesse dia.
         </p>
+      ) : (
+        <ScheduleGrid
+          professionals={professionals}
+          hours={hourRange}
+          events={events}
+          onSelectEvent={setDetailTarget}
+        />
       )}
+
+      <AppointmentDetailModal
+        appointment={detailTarget}
+        isUpdating={isUpdating}
+        onClose={() => setDetailTarget(null)}
+        onStatusChange={handleStatusChange}
+        onRequestCancel={setCancelTarget}
+      />
+
+      <ConfirmationModal
+        open={Boolean(cancelTarget)}
+        title="Cancelar agendamento"
+        description="Tem certeza que deseja cancelar este agendamento? Essa ação não pode ser desfeita."
+        confirmLabel="Sim, cancelar"
+        cancelLabel="Voltar"
+        isLoading={isUpdating}
+        onConfirm={handleConfirmCancel}
+        onCancel={() => setCancelTarget(null)}
+      />
     </div>
   );
 }

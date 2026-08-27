@@ -1,22 +1,33 @@
-import { useState } from "react";
-import { FiCalendar, FiMoreHorizontal } from "react-icons/fi";
+import { useEffect, useState } from "react";
+import { FiCalendar, FiUser } from "react-icons/fi";
 import AutocompleteFilter from "../../../shared/components/AutocompleteFilter";
-import { clients, clientFilters } from "../data/mockClients";
-
-function getInitials(name) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0].toUpperCase())
-    .join("");
-}
+import OverflowMenu from "../../../shared/components/OverflowMenu";
+import Avatar from "../../../shared/components/Avatar";
+import ClientHistoryModal from "./ClientHistoryModal";
+import ClientProfileModal from "./ClientProfileModal";
+import { listClients } from "../services/clientService";
+import { clientFilters } from "../data/mockClients";
+import { formatBRL } from "../../../shared/utils/formatCurrency";
+import { formatRelativeDate } from "../../../shared/utils/formatDate";
+import { maskBrazilianPhone } from "../../../shared/utils/phoneMask";
 
 export default function ClientsTable() {
+  const [clients, setClients] = useState([]);
+  const [loadStatus, setLoadStatus] = useState("loading");
   const [filter, setFilter] = useState("all");
+  const [historyTarget, setHistoryTarget] = useState(null);
+  const [profileTarget, setProfileTarget] = useState(null);
 
-  const filteredClients =
-    filter === "all" ? clients : clients.filter((client) => client.segment === filter);
+  useEffect(() => {
+    listClients()
+      .then(({ data }) => {
+        setClients(data);
+        setLoadStatus("success");
+      })
+      .catch(() => setLoadStatus("error"));
+  }, []);
+
+  const filteredClients = filter === "all" ? clients : clients.filter((client) => client.segment === filter);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
@@ -31,63 +42,120 @@ export default function ClientsTable() {
         />
       </div>
 
-      <div className="mt-4 overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
-              <th className="pb-3 font-semibold">Cliente</th>
-              <th className="pb-3 font-semibold">Contato</th>
-              <th className="pb-3 font-semibold">Visitas</th>
-              <th className="pb-3 font-semibold">Gasto total</th>
-              <th className="pb-3 font-semibold">Última</th>
-              <th className="pb-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filteredClients.map((client) => (
-              <tr key={client.id}>
-                <td className="py-4 pr-4 align-middle">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white"
-                      style={{ background: `linear-gradient(135deg, ${client.from}, ${client.to})` }}
-                      aria-hidden="true"
-                    >
-                      {getInitials(client.name)}
-                    </span>
-                    <p className="font-semibold whitespace-nowrap text-gray-900">{client.name}</p>
+      {loadStatus === "loading" && <p className="mt-4 text-sm text-gray-500">Carregando...</p>}
+
+      {loadStatus === "error" && (
+        <p role="alert" className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          Não foi possível carregar as clientes agora. Tente novamente em instantes.
+        </p>
+      )}
+
+      {loadStatus === "success" && filteredClients.length === 0 && (
+        <p className="mt-4 rounded-lg border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
+          Nenhuma cliente encontrada para esse filtro.
+        </p>
+      )}
+
+      {loadStatus === "success" && filteredClients.length > 0 && (
+        <ul className="mt-4 space-y-3 lg:hidden">
+          {filteredClients.map((client) => {
+            return (
+              <li key={client.id} className="rounded-lg border border-gray-200 p-4">
+                <div className="flex items-center gap-3">
+                  <Avatar name={client.name} avatarUrl={client.avatarUrl} size={36} />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold text-gray-900">{client.name}</p>
+                    <p className="truncate text-xs text-gray-500">{client.email}</p>
                   </div>
-                </td>
-                <td className="py-4 pr-4 align-middle">
-                  <p className="text-gray-600">{client.email}</p>
-                  <p className="text-xs text-gray-400">{client.phone}</p>
-                </td>
-                <td className="py-4 pr-4 align-middle text-gray-600">{client.visits}</td>
-                <td className="py-4 pr-4 align-middle font-semibold text-gray-900 whitespace-nowrap">
-                  {client.spent}
-                </td>
-                <td className="py-4 pr-4 align-middle text-gray-500 whitespace-nowrap">{client.lastVisit}</td>
-                <td className="py-4 align-middle text-right whitespace-nowrap">
-                  <button
-                    type="button"
-                    aria-label="Ver agenda"
-                    className="mr-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50"
-                  >
-                    <FiCalendar size={14} aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label="Mais opções"
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50"
-                  >
-                    <FiMoreHorizontal size={14} aria-hidden="true" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                  <OverflowMenu
+                    ariaLabel={`Mais opções de ${client.name}`}
+                    actions={[
+                      { label: "Ver agenda", icon: FiCalendar, onClick: () => setHistoryTarget(client) },
+                      { label: "Ver perfil completo", icon: FiUser, onClick: () => setProfileTarget(client) },
+                    ]}
+                  />
+                </div>
+
+                <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+                  <div>
+                    <p className="font-semibold text-gray-900">{client.visits}</p>
+                    <p className="text-gray-400">Visitas</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">{formatBRL(client.spent)}</p>
+                    <p className="text-gray-400">Gasto</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">{formatRelativeDate(client.lastVisit)}</p>
+                    <p className="text-gray-400">Última</p>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {loadStatus === "success" && filteredClients.length > 0 && (
+        <div className="mt-4 hidden overflow-x-auto lg:block">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                  <th className="pb-3 font-semibold">Cliente</th>
+                  <th className="pb-3 font-semibold">Contato</th>
+                  <th className="pb-3 font-semibold">Telefone</th>
+                  <th className="pb-3 font-semibold">Visitas</th>
+                  <th className="pb-3 font-semibold">Gasto total</th>
+                  <th className="pb-3 font-semibold">Última</th>
+                  <th className="pb-3" />
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredClients.map((client) => {
+                  return (
+                    <tr key={client.id}>
+                      <td className="py-4 pr-4 align-middle">
+                        <div className="flex items-center gap-3">
+                          <Avatar name={client.name} avatarUrl={client.avatarUrl} size={36} />
+                          <p className="font-semibold whitespace-nowrap text-gray-900">{client.name}</p>
+                        </div>
+                      </td>
+                      <td className="py-4 pr-4 align-middle">
+                        <p className="text-gray-600">{client.email}</p>
+                      </td>
+                      <td className="py-4 pr-4 align-middle whitespace-nowrap text-gray-600">
+                        {client.phone ? maskBrazilianPhone(client.phone) : "—"}
+                      </td>
+                      <td className="py-4 pr-4 align-middle text-gray-600">{client.visits}</td>
+                      <td className="py-4 pr-4 align-middle font-semibold text-gray-900 whitespace-nowrap">
+                        {formatBRL(client.spent)}
+                      </td>
+                      <td className="py-4 pr-4 align-middle text-gray-500 whitespace-nowrap">
+                        {formatRelativeDate(client.lastVisit)}
+                      </td>
+                      <td className="py-4 align-middle text-right whitespace-nowrap">
+                        <OverflowMenu
+                          ariaLabel={`Mais opções de ${client.name}`}
+                          actions={[
+                            { label: "Ver agenda", icon: FiCalendar, onClick: () => setHistoryTarget(client) },
+                            { label: "Ver perfil completo", icon: FiUser, onClick: () => setProfileTarget(client) },
+                          ]}
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+        </div>
+      )}
+
+      {historyTarget && (
+        <ClientHistoryModal client={historyTarget} onClose={() => setHistoryTarget(null)} />
+      )}
+      {profileTarget && (
+        <ClientProfileModal client={profileTarget} onClose={() => setProfileTarget(null)} />
+      )}
     </div>
   );
 }

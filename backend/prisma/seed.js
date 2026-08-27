@@ -14,6 +14,7 @@ const PERMISSIONS = [
   { key: "manage_reports", description: "Access business reports" },
   { key: "manage_settings", description: "Manage critical salon settings" },
   { key: "view_dashboard", description: "View dashboard metrics" },
+  { key: "view_clients", description: "View the clients list (read-only)" },
 ];
 
 const ROLES = [
@@ -35,7 +36,7 @@ const ROLE_PERMISSIONS = {
     "manage_reports",
     "view_dashboard",
   ],
-  employee: ["manage_schedules", "manage_appointments", "view_dashboard"],
+  employee: ["manage_schedules", "manage_appointments", "view_dashboard", "view_clients"],
   client: [],
 };
 
@@ -69,8 +70,42 @@ async function main() {
   }
 
   await seedOwnerUser();
+  await seedSalonSettings();
 
   console.log("Seed completed: roles and permissions are in sync.");
+}
+
+const DEFAULT_BUSINESS_HOURS = [
+  { id: "mon", label: "Segunda", enabled: true, open: "09:00", close: "19:00" },
+  { id: "tue", label: "Terça", enabled: true, open: "09:00", close: "19:00" },
+  { id: "wed", label: "Quarta", enabled: true, open: "09:00", close: "19:00" },
+  { id: "thu", label: "Quinta", enabled: true, open: "09:00", close: "19:00" },
+  { id: "fri", label: "Sexta", enabled: true, open: "09:00", close: "20:00" },
+  { id: "sat", label: "Sábado", enabled: true, open: "09:00", close: "17:00" },
+  { id: "sun", label: "Domingo", enabled: false, open: "", close: "" },
+];
+
+// Linha única de configurações do salão. Sem chave natural pra upsert (é
+// singleton) — só cria se ainda não existir nenhuma linha, igual ao bootstrap
+// do owner.
+async function seedSalonSettings() {
+  const existing = await prisma.salonSettings.findFirst();
+  if (existing) {
+    console.log("Salon settings already exist — skipping.");
+    return;
+  }
+
+  await prisma.salonSettings.create({
+    data: {
+      name: "MaryCabeleleira",
+      address: "R. Oscar Freire, 472 — Jardins",
+      phone: "(11) 3456-2210",
+      email: "ola@marycabeleleira.com.br",
+      hours: DEFAULT_BUSINESS_HOURS,
+    },
+  });
+
+  console.log("Salon settings created with default values.");
 }
 
 // Bootstrap do primeiro usuário owner. Sem isso não há como obter a role

@@ -2,11 +2,12 @@ import { useState } from "react";
 import { FiUser, FiPhone, FiMail } from "react-icons/fi";
 import FormField from "../../../shared/components/FormField";
 import { updateProfile } from "../services/profileService";
+import { maskBrazilianPhone } from "../../../shared/utils/phoneMask";
 
-export default function PersonalInfoForm({ profile }) {
+export default function PersonalInfoForm({ profile, onSaved }) {
   const [values, setValues] = useState({
     name: profile.name,
-    phoneNumber: profile.phoneNumber,
+    phoneNumber: maskBrazilianPhone(profile.phoneNumber),
     email: profile.email,
   });
   const [status, setStatus] = useState("idle");
@@ -14,14 +15,21 @@ export default function PersonalInfoForm({ profile }) {
 
   function handleChange(event) {
     const { name, value } = event.target;
-    setValues((prev) => ({ ...prev, [name]: value }));
+    const nextValue = name === "phoneNumber" ? maskBrazilianPhone(value) : value;
+    setValues((prev) => ({ ...prev, [name]: nextValue }));
   }
 
   async function handleSave() {
     setStatus("saving");
     setError("");
     try {
-      await updateProfile(values);
+      const digitsOnlyPhone = values.phoneNumber.replace(/\D/g, "") || undefined;
+      const { data } = await updateProfile({
+        fullName: values.name,
+        email: values.email,
+        phoneNumber: digitsOnlyPhone,
+      });
+      onSaved?.({ fullName: data.fullName, email: data.email, phoneNumber: data.phoneNumber });
       setStatus("saved");
     } catch {
       setStatus("error");

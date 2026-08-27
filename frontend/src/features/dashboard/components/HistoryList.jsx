@@ -24,7 +24,7 @@ export default function HistoryList({
         {items.map((item) => (
           <li key={item.id} className="flex items-center gap-3 py-3">
             <img
-              src="/Mary_Cabelereira.jpeg"
+              src="/Mary_Cabelereira.png"
               alt=""
               aria-hidden="true"
               className="h-10 w-10 shrink-0 rounded-lg object-cover"

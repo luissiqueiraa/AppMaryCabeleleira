@@ -25,7 +25,7 @@ export default function HistoryTable({ items }) {
             <td className="py-4 pr-4 align-middle">
               <div className="flex items-center gap-3">
                 <img
-                  src="/Mary_Cabelereira.jpeg"
+                  src="/Mary_Cabelereira.png"
                   alt=""
                   aria-hidden="true"
                   className="h-9 w-9 shrink-0 rounded-lg object-cover"

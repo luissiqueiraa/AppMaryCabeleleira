@@ -3,7 +3,7 @@ import { FiCalendar, FiClock } from "react-icons/fi";
 import StatusBadge from "../../../shared/components/StatusBadge";
 
 export default function AppointmentCard({ appointment, onCancel }) {
-  const canManage = appointment.status === "pending" || appointment.status === "confirmed";
+  const canManage = appointment.status === "confirmed";
 
   return (
     <li className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">

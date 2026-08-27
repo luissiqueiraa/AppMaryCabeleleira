@@ -1,12 +1,26 @@
 import { useState } from "react";
 import Switch from "../../../shared/components/Switch";
-import { preferenceToggles } from "../data/mockPreferences";
+import { updatePreferences } from "../services/profileService";
 
-export default function PreferencesPanel() {
-  const [toggles, setToggles] = useState(preferenceToggles);
+export default function PreferencesPanel({ whatsappReminders, onSaved }) {
+  const [enabled, setEnabled] = useState(whatsappReminders);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleToggle(id, enabled) {
-    setToggles((prev) => prev.map((item) => (item.id === id ? { ...item, enabled } : item)));
+  async function handleToggle(value) {
+    const previous = enabled;
+    setEnabled(value);
+    setIsSaving(true);
+    setError("");
+    try {
+      const { data } = await updatePreferences({ whatsappReminders: value });
+      onSaved?.({ whatsappReminders: data.whatsappReminders });
+    } catch {
+      setEnabled(previous);
+      setError("Não foi possível salvar agora. Tente novamente em instantes.");
+    } finally {
+      setIsSaving(false);
+    }
   }
 
   return (
@@ -15,20 +29,25 @@ export default function PreferencesPanel() {
         Preferências de atendimento
       </h3>
 
+      {error && (
+        <p role="alert" className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {error}
+        </p>
+      )}
+
       <ul className="mt-4 divide-y divide-gray-100">
-        {toggles.map((toggle) => (
-          <li key={toggle.id} className="flex items-center justify-between gap-4 py-4">
-            <div>
-              <p className="text-sm font-semibold text-gray-900">{toggle.label}</p>
-              <p className="mt-0.5 text-sm text-gray-500">{toggle.description}</p>
-            </div>
-            <Switch
-              checked={toggle.enabled}
-              onChange={(value) => handleToggle(toggle.id, value)}
-              label={toggle.label}
-            />
-          </li>
-        ))}
+        <li className="flex items-center justify-between gap-4 py-4">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Lembretes por WhatsApp</p>
+            <p className="mt-0.5 text-sm text-gray-500">Avisamos 1h antes do horário</p>
+          </div>
+          <Switch
+            checked={enabled}
+            onChange={handleToggle}
+            disabled={isSaving}
+            label="Lembretes por WhatsApp"
+          />
+        </li>
       </ul>
     </div>
   );

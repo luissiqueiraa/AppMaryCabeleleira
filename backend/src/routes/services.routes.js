@@ -4,6 +4,7 @@ import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/authorize.middleware.js";
 import { validateRequest } from "../middlewares/validateRequest.middleware.js";
 import { createServiceSchema, updateServiceSchema } from "../validators/services.validator.js";
+import { idParamSchema } from "../validators/common.validator.js";
 
 const router = Router();
 
@@ -16,6 +17,12 @@ router.patch(
   authorize("manage_services"),
   validateRequest(updateServiceSchema),
   servicesController.updateService
+);
+router.delete(
+  "/:id",
+  authorize("manage_services"),
+  validateRequest(idParamSchema),
+  servicesController.deleteService
 );
 
 export default router;

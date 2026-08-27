@@ -1,8 +1,6 @@
-import { FiX, FiClock } from "react-icons/fi";
-import { HiSparkles } from "react-icons/hi2";
+import { FiX, FiClock, FiUsers } from "react-icons/fi";
 import Switch from "../../../shared/components/Switch";
-import { avatarColorFor } from "../../../shared/utils/avatarColor";
-import { resolveAssetUrl } from "../../../shared/utils/assetUrl";
+import Avatar from "../../../shared/components/Avatar";
 
 const MONTH_ABBR = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
 
@@ -30,7 +28,6 @@ export default function BookingConfirmationModal({
   notes,
   onNotesChange,
   isLoading,
-  error,
   isComplete,
   onConfirm,
   onClose,
@@ -54,7 +51,7 @@ export default function BookingConfirmationModal({
         <div className="flex items-center justify-between border-b border-gray-100 p-4">
           <div className="flex items-center gap-3">
             <img
-              src="/Mary_Cabelereira.jpeg"
+              src="/Mary_Cabelereira.png"
               alt=""
               className="h-10 w-10 shrink-0 rounded-full object-cover"
               aria-hidden="true"
@@ -91,28 +88,13 @@ export default function BookingConfirmationModal({
 
               <div className="mt-2 flex items-center gap-2">
                 {professional ? (
-                  professional.user.avatarUrl ? (
-                    <img
-                      src={resolveAssetUrl(professional.user.avatarUrl)}
-                      alt=""
-                      aria-hidden="true"
-                      className="h-6 w-6 shrink-0 rounded-full object-cover"
-                    />
-                  ) : (
-                    <span
-                      className="h-6 w-6 shrink-0 rounded-full"
-                      style={{
-                        background: `linear-gradient(135deg, ${avatarColorFor(professional.id).from}, ${avatarColorFor(professional.id).to})`,
-                      }}
-                      aria-hidden="true"
-                    />
-                  )
+                  <Avatar name={professional.user.fullName} avatarUrl={professional.user.avatarUrl} size={24} />
                 ) : (
                   <span
                     className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-white"
                     aria-hidden="true"
                   >
-                    <HiSparkles size={12} className="text-pink-400" />
+                    <FiUsers size={12} className="text-pink-400" />
                   </span>
                 )}
                 <p className="text-sm text-gray-600">{professionalName}</p>
@@ -163,12 +145,6 @@ export default function BookingConfirmationModal({
               className="mt-1.5 w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus-visible:border-pink-600 focus-visible:ring-2 focus-visible:ring-pink-100"
             />
           </div>
-
-          {error && (
-            <p role="alert" className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </p>
-          )}
 
           <button
             type="button"

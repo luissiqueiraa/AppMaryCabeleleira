@@ -26,3 +26,12 @@ export async function updateService(req, res, next) {
     next(error);
   }
 }
+
+export async function deleteService(req, res, next) {
+  try {
+    await servicesService.deleteService(req.params.id, req);
+    res.status(200).json({ success: true, data: { message: "Service deleted" } });
+  } catch (error) {
+    next(error);
+  }
+}

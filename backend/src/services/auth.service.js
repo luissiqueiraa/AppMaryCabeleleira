@@ -22,6 +22,7 @@ function toSafeUser(user) {
     status: user.status,
     role: user.role ? { id: user.role.id, name: user.role.name } : null,
     avatarUrl: user.avatarUrl,
+    whatsappReminders: user.whatsappReminders,
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
   };
@@ -186,6 +187,46 @@ export async function updateAvatar(userId, filename, req) {
   await recordAuditLog({ userId, action: "user.avatar_update", entity: "User", entityId: userId, req });
   const permissions = await authRepository.getRolePermissionKeys(user.roleId);
   return { ...toSafeUser(user), permissions };
+}
+
+export async function updateMe(userId, payload, req) {
+  if (payload.email) {
+    const existingUser = await authRepository.findUserByEmail(payload.email);
+    if (existingUser && existingUser.id !== userId) {
+      throw new AppError("Email is already in use", 409);
+    }
+  }
+
+  const user = await authRepository.updateUserProfile(userId, payload);
+  await recordAuditLog({ userId, action: "user.profile_update", entity: "User", entityId: userId, req });
+  const permissions = await authRepository.getRolePermissionKeys(user.roleId);
+  return { ...toSafeUser(user), permissions };
+}
+
+export async function changeMyPassword(userId, { currentPassword, newPassword }, req) {
+  const user = await authRepository.findUserById(userId);
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
+
+  const isCurrentPasswordValid = await verifyPassword(currentPassword, user.passwordHash);
+  if (!isCurrentPasswordValid) {
+    throw new AppError("Current password is incorrect", 422);
+  }
+
+  const passwordHash = await hashPassword(newPassword);
+  await authRepository.resetPasswordAndClearToken(userId, passwordHash);
+  await authRepository.revokeAllRefreshTokensForUser(userId);
+  await recordAuditLog({ userId, action: "user.password_change", entity: "User", entityId: userId, req });
+
+  return { message: "Password updated successfully" };
+}
+
+export async function deleteMe(userId, req) {
+  await authRepository.softDeleteUser(userId);
+  await authRepository.revokeAllRefreshTokensForUser(userId);
+  await recordAuditLog({ userId, action: "user.self_delete", entity: "User", entityId: userId, req });
+  return { message: "Account deleted" };
 }
 
 export async function forgotPassword(email, req) {

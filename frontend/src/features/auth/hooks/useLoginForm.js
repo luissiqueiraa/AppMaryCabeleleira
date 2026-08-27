@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../../shared/contexts/useAuth";
+import { ROLES } from "../../../shared/constants/roles";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -61,7 +62,7 @@ export function useLoginForm() {
         password: values.password,
       });
       setStatus("success");
-      const isStaff = user.role?.name === "owner" || user.role?.name === "admin";
+      const isStaff = [ROLES.OWNER, ROLES.ADMIN, ROLES.EMPLOYEE].includes(user.role?.name);
       navigate(isStaff ? "/admin" : "/dashboard");
     } catch {
       setStatus("error");

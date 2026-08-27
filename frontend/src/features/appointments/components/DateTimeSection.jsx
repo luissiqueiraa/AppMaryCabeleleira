@@ -14,11 +14,12 @@ export default function DateTimeSection({
   onSelectDate,
   onSelectTime,
   heading,
+  hours = [],
   slots = [],
   unavailableTimes = new Set(),
   isLoadingAvailability = false,
 }) {
-  const days = useMemo(() => getAvailableDays(), []);
+  const days = useMemo(() => getAvailableDays(hours), [hours]);
   const activeDay = days.find((day) => day.iso === selectedDate);
   const monthLabel = activeDay?.monthLabel ?? days[0]?.monthLabel;
 
@@ -99,6 +100,12 @@ export default function DateTimeSection({
       </div>
 
       {isLoadingAvailability && <p className="mt-3 text-xs text-gray-400">Verificando disponibilidade...</p>}
+
+      {!isLoadingAvailability && groupedSlots.length === 0 && (
+        <p className="mt-3 text-sm text-gray-500">
+          {activeDay?.disabled ? "O salão não abre nesse dia." : "Nenhum horário disponível para esse dia."}
+        </p>
+      )}
 
       <div className="mt-4 space-y-5">
         {groupedSlots.map((period) => (
