@@ -1,4 +1,7 @@
 import * as clientsRepository from "../repositories/clients.repository.js";
+import * as authRepository from "../repositories/auth.repository.js";
+import { AppError } from "../utils/AppError.js";
+import { recordAuditLog } from "../utils/auditLogger.js";
 
 const RECENT_WINDOW_DAYS = 60;
 
@@ -29,4 +32,21 @@ function toClientDto(user) {
 export async function listClients() {
   const clients = await clientsRepository.findAllClients();
   return clients.map(toClientDto);
+}
+
+export async function deleteClient(id, req) {
+  const user = await authRepository.findUserById(id);
+  if (!user || user.role?.name !== "client") {
+    throw new AppError("Client not found", 404);
+  }
+
+  await authRepository.softDeleteUser(id);
+  await authRepository.revokeAllRefreshTokensForUser(id);
+  await recordAuditLog({
+    userId: req.user.id,
+    action: "client.delete",
+    entity: "User",
+    entityId: id,
+    req,
+  });
 }

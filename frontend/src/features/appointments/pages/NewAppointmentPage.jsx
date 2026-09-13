@@ -51,8 +51,9 @@ export default function NewAppointmentPage() {
           <DashboardHeader
             eyebrow="Novo agendamento"
             title="Agendar horário"
-            user={{ name: user?.fullName ?? "" }}
+            user={{ name: user?.fullName ?? "", email: user?.email, avatarUrl: user?.avatarUrl }}
             onOpenMenu={() => {}}
+            onLogout={handleLogout}
             headerAction={
               <Link
                 to="/dashboard"

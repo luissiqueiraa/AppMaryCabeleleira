@@ -1,6 +1,5 @@
 import Container from "../ui/Container";
 import SectionHeading from "../ui/SectionHeading";
-import { processSteps } from "../../data/process";
 
 export default function Process() {
   return (
@@ -13,15 +12,40 @@ export default function Process() {
             aria-hidden="true"
             className="absolute top-6 right-0 left-0 hidden h-px bg-border lg:block"
           />
-          {processSteps.map((item) => (
-            <li key={item.step} className="relative text-center sm:text-left">
-              <span className="font-display relative z-10 flex h-12 w-12 items-center justify-center rounded-full border border-primary-light bg-bg text-lg font-semibold text-primary-light">
-                {item.step}
-              </span>
-              <h3 className="mt-4 font-display font-semibold">{item.title}</h3>
-              <p className="mt-2 text-sm text-text-muted">{item.description}</p>
-            </li>
-          ))}
+          <li className="relative text-center sm:text-left">
+            <span className="font-display relative z-10 flex h-12 w-12 items-center justify-center rounded-full border border-primary-light bg-bg text-lg font-semibold text-primary-light">
+              01
+            </span>
+            <h3 className="mt-4 font-display font-semibold">Escolha o serviço</h3>
+            <p className="mt-2 text-sm text-text-muted">
+              Navegue pelo catálogo e selecione o que deseja fazer.
+            </p>
+          </li>
+          <li className="relative text-center sm:text-left">
+            <span className="font-display relative z-10 flex h-12 w-12 items-center justify-center rounded-full border border-primary-light bg-bg text-lg font-semibold text-primary-light">
+              02
+            </span>
+            <h3 className="mt-4 font-display font-semibold">Escolha a profissional</h3>
+            <p className="mt-2 text-sm text-text-muted">
+              Selecione a especialista ideal para o seu estilo.
+            </p>
+          </li>
+          <li className="relative text-center sm:text-left">
+            <span className="font-display relative z-10 flex h-12 w-12 items-center justify-center rounded-full border border-primary-light bg-bg text-lg font-semibold text-primary-light">
+              03
+            </span>
+            <h3 className="mt-4 font-display font-semibold">Marque a data</h3>
+            <p className="mt-2 text-sm text-text-muted">
+              Escolha o melhor dia e horário disponível para você.
+            </p>
+          </li>
+          <li className="relative text-center sm:text-left">
+            <span className="font-display relative z-10 flex h-12 w-12 items-center justify-center rounded-full border border-primary-light bg-bg text-lg font-semibold text-primary-light">
+              04
+            </span>
+            <h3 className="mt-4 font-display font-semibold">Pronto, é só ir!</h3>
+            <p className="mt-2 text-sm text-text-muted">Confirmação imediata, sem complicação.</p>
+          </li>
         </ol>
       </Container>
     </section>

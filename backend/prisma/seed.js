@@ -34,6 +34,7 @@ const ROLE_PERMISSIONS = {
     "manage_appointments",
     "manage_financial",
     "manage_reports",
+    "manage_settings",
     "view_dashboard",
   ],
   employee: ["manage_schedules", "manage_appointments", "view_dashboard", "view_clients"],

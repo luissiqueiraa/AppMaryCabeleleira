@@ -2,11 +2,9 @@ import { useMemo } from "react";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { getAvailableDays } from "../data/mockAvailability";
 
-const PERIODS = [
-  { id: "morning", label: "Manhã", isInPeriod: (time) => Number(time.split(":")[0]) < 12 },
-  { id: "afternoon", label: "Tarde", isInPeriod: (time) => Number(time.split(":")[0]) >= 12 && Number(time.split(":")[0]) < 18 },
-  { id: "evening", label: "Noite", isInPeriod: (time) => Number(time.split(":")[0]) >= 18 },
-];
+function toSlots(times, unavailableTimes) {
+  return times.map((time) => ({ time, available: !unavailableTimes.has(time) }));
+}
 
 export default function DateTimeSection({
   selectedDate,
@@ -23,12 +21,18 @@ export default function DateTimeSection({
   const activeDay = days.find((day) => day.iso === selectedDate);
   const monthLabel = activeDay?.monthLabel ?? days[0]?.monthLabel;
 
-  const groupedSlots = PERIODS.map((period) => ({
-    ...period,
-    slots: slots
-      .filter((time) => period.isInPeriod(time))
-      .map((time) => ({ time, available: !unavailableTimes.has(time) })),
-  })).filter((period) => period.slots.length > 0);
+  const morningTimes = slots.filter((time) => Number(time.split(":")[0]) < 12);
+  const afternoonTimes = slots.filter((time) => {
+    const hour = Number(time.split(":")[0]);
+    return hour >= 12 && hour < 18;
+  });
+  const eveningTimes = slots.filter((time) => Number(time.split(":")[0]) >= 18);
+
+  const groupedSlots = [
+    { id: "morning", label: "Manhã", slots: toSlots(morningTimes, unavailableTimes) },
+    { id: "afternoon", label: "Tarde", slots: toSlots(afternoonTimes, unavailableTimes) },
+    { id: "evening", label: "Noite", slots: toSlots(eveningTimes, unavailableTimes) },
+  ].filter((period) => period.slots.length > 0);
 
   return (
     <section aria-labelledby="datetime-section-title">

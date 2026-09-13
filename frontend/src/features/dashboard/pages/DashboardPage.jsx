@@ -55,7 +55,7 @@ export default function DashboardPage() {
     { id: "visits", label: "Atendimentos", value: String(appointments.length), hint: "desde o cadastro" },
     lastVisit
       ? { id: "lastVisit", label: "Última visita", value: lastVisit.date, hint: `${lastVisit.service} com ${lastVisit.professional}` }
-      : { id: "lastVisit", label: "Última visita", value: "—", hint: "nenhuma ainda" },
+      : { id: "lastVisit", label: "Última visita", value: "Nunca", hint: "nenhuma ainda" },
   ];
 
   const recentHistory = [...appointments]

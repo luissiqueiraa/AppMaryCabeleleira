@@ -1,6 +1,6 @@
 import { FiMenu } from "react-icons/fi";
 import NotificationBell from "./NotificationBell";
-import Avatar from "../../../shared/components/Avatar";
+import AccountMenu from "./AccountMenu";
 
 export default function DashboardHeader({
   title,
@@ -9,6 +9,7 @@ export default function DashboardHeader({
   headerAction,
   user,
   onOpenMenu,
+  onLogout,
 }) {
   return (
     <header className="sticky top-0 z-30 border-b border-gray-100 bg-white/95 backdrop-blur-sm">
@@ -35,9 +36,7 @@ export default function DashboardHeader({
 
           <NotificationBell className={mobileAction ? "hidden lg:flex" : ""} />
 
-          <div className="hidden lg:flex" aria-label={`Conta de ${user.name}`}>
-            <Avatar name={user.name} avatarUrl={user.avatarUrl} size="md" />
-          </div>
+          <AccountMenu user={user} onLogout={onLogout} />
 
           {headerAction && <span className="hidden lg:block">{headerAction}</span>}
         </div>

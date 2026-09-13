@@ -8,3 +8,12 @@ export async function listClients(req, res, next) {
     next(error);
   }
 }
+
+export async function deleteClient(req, res, next) {
+  try {
+    await clientsService.deleteClient(req.params.id, req);
+    res.status(200).json({ success: true, data: { message: "Client deleted" } });
+  } catch (error) {
+    next(error);
+  }
+}

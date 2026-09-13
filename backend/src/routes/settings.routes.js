@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as settingsController from "../controllers/settings.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
 import { authorize } from "../middlewares/authorize.middleware.js";
+import { uploadLogo } from "../middlewares/upload.middleware.js";
 import { validateRequest } from "../middlewares/validateRequest.middleware.js";
 import { updateSettingsSchema } from "../validators/settings.validator.js";
 
@@ -17,5 +18,6 @@ router.patch(
   validateRequest(updateSettingsSchema),
   settingsController.updateSettings
 );
+router.patch("/logo", authorize("manage_settings"), uploadLogo, settingsController.updateLogo);
 
 export default router;

@@ -2,7 +2,6 @@ import { FiCheck } from "react-icons/fi";
 import Container from "../ui/Container";
 import Button from "../ui/Button";
 import GradientBlock from "../ui/GradientBlock";
-import { aboutHighlights } from "../../data/stats";
 
 export default function About() {
   return (
@@ -31,12 +30,18 @@ export default function About() {
           </p>
 
           <ul className="mt-6 space-y-3">
-            {aboutHighlights.map((item) => (
-              <li key={item} className="flex items-center gap-3 text-sm">
-                <FiCheck className="text-primary-light" aria-hidden="true" />
-                {item}
-              </li>
-            ))}
+            <li className="flex items-center gap-3 text-sm">
+              <FiCheck className="text-primary-light" aria-hidden="true" />
+              Equipe em formação contínua
+            </li>
+            <li className="flex items-center gap-3 text-sm">
+              <FiCheck className="text-primary-light" aria-hidden="true" />
+              Produtos premium selecionados
+            </li>
+            <li className="flex items-center gap-3 text-sm">
+              <FiCheck className="text-primary-light" aria-hidden="true" />
+              Ambiente acolhedor e sofisticado
+            </li>
           </ul>
 
           <Button to="/agendar" variant="primary" className="mt-8">

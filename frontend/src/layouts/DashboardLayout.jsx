@@ -121,8 +121,9 @@ export default function DashboardLayout() {
           mobileTitle={pageInfo.mobileTitle}
           mobileAction={pageInfo.mobileAction}
           headerAction={pageInfo.headerAction}
-          user={{ name: user?.fullName ?? "", avatarUrl: user?.avatarUrl }}
+          user={{ name: user?.fullName ?? "", email: user?.email, avatarUrl: user?.avatarUrl }}
           onOpenMenu={() => setDrawerOpen(true)}
+          onLogout={handleLogout}
         />
         <main className="flex-1 overflow-y-auto px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:pb-8">
           <Outlet />

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import SalonIdentityCard from "../components/SalonIdentityCard";
 import BusinessHoursCard from "../components/BusinessHoursCard";
 import UnsavedChangesToast from "../../../shared/components/UnsavedChangesToast";
-import { getSettings, updateSettings } from "../../../shared/services/settingsService";
+import { getSettings, updateSettings, uploadSalonLogo } from "../../../shared/services/settingsService";
 import { settingsTabs } from "../data/mockAdminSettings";
 import { useToast } from "../../../shared/contexts/useToast";
 import { getErrorMessage } from "../../../shared/utils/errorMessage";
@@ -15,6 +15,7 @@ export default function AdminSettingsPage() {
   const [draft, setDraft] = useState(null);
   const [loadStatus, setLoadStatus] = useState("loading");
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
 
   useEffect(() => {
     getSettings()
@@ -60,6 +61,20 @@ export default function AdminSettingsPage() {
     setDraft(settings);
   }
 
+  async function handleLogoChange(file) {
+    setIsUploadingLogo(true);
+    try {
+      const { data } = await uploadSalonLogo(file);
+      setSettings(data);
+      setDraft(data);
+      toast.success("Logo atualizada com sucesso.");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Não foi possível atualizar a logo agora. Tente novamente."));
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  }
+
   if (loadStatus === "loading") {
     return <p className="text-sm text-gray-500">Carregando...</p>;
   }
@@ -74,7 +89,12 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-16">
-      <SalonIdentityCard values={draft} onChange={updateDraft} />
+      <SalonIdentityCard
+        values={draft}
+        onChange={updateDraft}
+        onLogoChange={handleLogoChange}
+        isUploadingLogo={isUploadingLogo}
+      />
       <BusinessHoursCard hours={draft.hours} onChange={updateHours} />
 
       {PLACEHOLDER_TABS.map((tab) => (

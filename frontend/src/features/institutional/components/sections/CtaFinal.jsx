@@ -2,11 +2,6 @@ import { FiMapPin, FiPhone } from "react-icons/fi";
 import Container from "../ui/Container";
 import Button from "../ui/Button";
 
-const SCHEDULE = [
-  { day: "Segunda – Sexta", hours: "09:00 – 20:00" },
-  { day: "Sábado", hours: "09:00 – 18:00" },
-];
-
 export default function CtaFinal() {
   return (
     <section className="py-20 sm:py-28">
@@ -29,12 +24,14 @@ export default function CtaFinal() {
               Horário de funcionamento
             </h3>
             <dl className="mt-4 space-y-2 text-sm text-text-muted">
-              {SCHEDULE.map((item) => (
-                <div key={item.day} className="flex justify-between gap-4">
-                  <dt>{item.day}</dt>
-                  <dd>{item.hours}</dd>
-                </div>
-              ))}
+              <div className="flex justify-between gap-4">
+                <dt>Segunda – Sexta</dt>
+                <dd>09:00 – 20:00</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt>Sábado</dt>
+                <dd>09:00 – 18:00</dd>
+              </div>
             </dl>
 
             <div className="mt-6 space-y-3 border-t border-border pt-6 text-sm text-text-muted">

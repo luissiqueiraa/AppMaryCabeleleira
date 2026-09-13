@@ -69,12 +69,6 @@ export default function AdminDashboardPage() {
   const confirmedToday = todayAppointments.filter((item) => item.status === "confirmed" || item.status === "completed");
   const revenueToday = confirmedToday.reduce((sum, item) => sum + Number(item.priceValue ?? 0), 0);
 
-  const adminKpis = [
-    { id: "today", label: "Agendamentos hoje", value: String(todayAppointments.length) },
-    { id: "confirmed", label: "Confirmados", value: String(confirmedToday.length) },
-    { id: "revenue", label: "Recebido", value: formatBRL(revenueToday) },
-  ];
-
   const now = new Date();
   const upcomingAppointments = appointments
     .filter((item) => new Date(item.scheduledAt) >= now && item.status !== "cancelled")
@@ -83,9 +77,9 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {adminKpis.map((kpi) => (
-          <KpiCard key={kpi.id} {...kpi} uppercaseLabel />
-        ))}
+        <KpiCard label="Agendamentos hoje" value={String(todayAppointments.length)} uppercaseLabel />
+        <KpiCard label="Confirmados" value={String(confirmedToday.length)} uppercaseLabel />
+        <KpiCard label="Recebido" value={formatBRL(revenueToday)} uppercaseLabel />
       </div>
 
       <CompletedAppointmentsHistory />

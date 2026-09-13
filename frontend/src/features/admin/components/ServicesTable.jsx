@@ -12,7 +12,13 @@ import { ROLES } from "../../../shared/constants/roles";
 import { useToast } from "../../../shared/contexts/useToast";
 import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
-const CATEGORY_LABEL = Object.fromEntries(serviceFilters.map((item) => [item.id, item.label]));
+const CATEGORY_LABEL = {
+  all: "Todos",
+  hair: "Cabelo",
+  nails: "Unhas",
+  makeup: "Maquiagem",
+  brows: "Sobrancelha",
+};
 
 export default function ServicesTable() {
   const { user } = useAuth();

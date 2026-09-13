@@ -36,7 +36,7 @@ export function formatTime(iso) {
 }
 
 export function formatRelativeDate(iso) {
-  if (!iso) return "—";
+  if (!iso) return "Nunca";
   const diffDays = Math.floor((Date.now() - new Date(iso).getTime()) / (24 * 60 * 60 * 1000));
   if (diffDays <= 0) return "Hoje";
   if (diffDays === 1) return "1 dia";

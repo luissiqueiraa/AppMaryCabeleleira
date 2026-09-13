@@ -2,7 +2,6 @@ import Container from "../ui/Container";
 import Button from "../ui/Button";
 import Badge from "../ui/Badge";
 import GradientBlock from "../ui/GradientBlock";
-import { heroStats } from "../../data/stats";
 
 export default function Hero() {
   return (
@@ -32,13 +31,21 @@ export default function Hero() {
           </div>
 
           <dl className="mt-12 grid grid-cols-3 gap-6">
-            {heroStats.map((stat) => (
-              <div key={stat.label}>
-                <dt className="sr-only">{stat.label}</dt>
-                <dd className="font-display text-2xl font-semibold sm:text-3xl">{stat.value}</dd>
-                <p className="mt-1 text-xs text-text-muted">{stat.label}</p>
-              </div>
-            ))}
+            <div>
+              <dt className="sr-only">Anos de experiência</dt>
+              <dd className="font-display text-2xl font-semibold sm:text-3xl">15+</dd>
+              <p className="mt-1 text-xs text-text-muted">Anos de experiência</p>
+            </div>
+            <div>
+              <dt className="sr-only">Clientes atendidas</dt>
+              <dd className="font-display text-2xl font-semibold sm:text-3xl">5mil+</dd>
+              <p className="mt-1 text-xs text-text-muted">Clientes atendidas</p>
+            </div>
+            <div>
+              <dt className="sr-only">Especialistas premiados</dt>
+              <dd className="font-display text-2xl font-semibold sm:text-3xl">12</dd>
+              <p className="mt-1 text-xs text-text-muted">Especialistas premiados</p>
+            </div>
           </dl>
         </div>
 

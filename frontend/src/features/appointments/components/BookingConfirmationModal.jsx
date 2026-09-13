@@ -102,7 +102,7 @@ export default function BookingConfirmationModal({
 
               <p className="mt-3 text-xs text-gray-400">A partir de:</p>
               <p className="text-lg font-semibold text-emerald-600">
-                {service ? `R$ ${formatPrice(service.price)}` : "—"}
+                R$ {formatPrice(service ? service.price : 0)}
               </p>
 
               {time && endTime && (

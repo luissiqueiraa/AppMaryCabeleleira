@@ -17,3 +17,12 @@ export async function updateSettings(req, res, next) {
     next(error);
   }
 }
+
+export async function updateLogo(req, res, next) {
+  try {
+    const settings = await settingsService.updateLogo(req.file.filename, req);
+    res.status(200).json({ success: true, data: settings });
+  } catch (error) {
+    next(error);
+  }
+}

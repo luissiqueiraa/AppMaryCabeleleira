@@ -1,31 +1,55 @@
 import { useEffect, useState } from "react";
-import { FiCalendar, FiUser } from "react-icons/fi";
+import { FiCalendar, FiUser, FiTrash2 } from "react-icons/fi";
 import AutocompleteFilter from "../../../shared/components/AutocompleteFilter";
 import OverflowMenu from "../../../shared/components/OverflowMenu";
 import Avatar from "../../../shared/components/Avatar";
+import ConfirmationModal from "../../../shared/components/ConfirmationModal";
 import ClientHistoryModal from "./ClientHistoryModal";
 import ClientProfileModal from "./ClientProfileModal";
-import { listClients } from "../services/clientService";
+import { listClients, deleteClient } from "../services/clientService";
 import { clientFilters } from "../data/mockClients";
 import { formatBRL } from "../../../shared/utils/formatCurrency";
 import { formatRelativeDate } from "../../../shared/utils/formatDate";
 import { maskBrazilianPhone } from "../../../shared/utils/phoneMask";
+import { useToast } from "../../../shared/contexts/useToast";
+import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
 export default function ClientsTable() {
+  const toast = useToast();
   const [clients, setClients] = useState([]);
   const [loadStatus, setLoadStatus] = useState("loading");
   const [filter, setFilter] = useState("all");
   const [historyTarget, setHistoryTarget] = useState(null);
   const [profileTarget, setProfileTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
+  function loadClients() {
     listClients()
       .then(({ data }) => {
         setClients(data);
         setLoadStatus("success");
       })
       .catch(() => setLoadStatus("error"));
+  }
+
+  useEffect(() => {
+    loadClients();
   }, []);
+
+  async function handleDelete() {
+    setIsDeleting(true);
+    try {
+      await deleteClient(deleteTarget.id);
+      toast.success(`"${deleteTarget.name}" foi excluída.`);
+      setDeleteTarget(null);
+      loadClients();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Não foi possível excluir agora. Tente novamente em instantes."));
+    } finally {
+      setIsDeleting(false);
+    }
+  }
 
   const filteredClients = filter === "all" ? clients : clients.filter((client) => client.segment === filter);
 
@@ -72,6 +96,7 @@ export default function ClientsTable() {
                     actions={[
                       { label: "Ver agenda", icon: FiCalendar, onClick: () => setHistoryTarget(client) },
                       { label: "Ver perfil completo", icon: FiUser, onClick: () => setProfileTarget(client) },
+                      { label: "Excluir", icon: FiTrash2, onClick: () => setDeleteTarget(client), danger: true },
                     ]}
                   />
                 </div>
@@ -124,7 +149,7 @@ export default function ClientsTable() {
                         <p className="text-gray-600">{client.email}</p>
                       </td>
                       <td className="py-4 pr-4 align-middle whitespace-nowrap text-gray-600">
-                        {client.phone ? maskBrazilianPhone(client.phone) : "—"}
+                        {client.phone ? maskBrazilianPhone(client.phone) : "Não informado"}
                       </td>
                       <td className="py-4 pr-4 align-middle text-gray-600">{client.visits}</td>
                       <td className="py-4 pr-4 align-middle font-semibold text-gray-900 whitespace-nowrap">
@@ -139,6 +164,7 @@ export default function ClientsTable() {
                           actions={[
                             { label: "Ver agenda", icon: FiCalendar, onClick: () => setHistoryTarget(client) },
                             { label: "Ver perfil completo", icon: FiUser, onClick: () => setProfileTarget(client) },
+                            { label: "Excluir", icon: FiTrash2, onClick: () => setDeleteTarget(client), danger: true },
                           ]}
                         />
                       </td>
@@ -156,6 +182,17 @@ export default function ClientsTable() {
       {profileTarget && (
         <ClientProfileModal client={profileTarget} onClose={() => setProfileTarget(null)} />
       )}
+
+      <ConfirmationModal
+        open={Boolean(deleteTarget)}
+        title="Excluir cliente"
+        description={deleteTarget ? `Tem certeza que deseja excluir "${deleteTarget.name}"? Essa ação não pode ser desfeita.` : ""}
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        isLoading={isDeleting}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

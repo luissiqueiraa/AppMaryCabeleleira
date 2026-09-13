@@ -1,7 +1,6 @@
 import { FiStar } from "react-icons/fi";
 import Container from "../ui/Container";
 import SectionHeading from "../ui/SectionHeading";
-import { testimonials, ratingSummary } from "../../data/testimonials";
 
 export default function Testimonials() {
   return (
@@ -16,28 +15,43 @@ export default function Testimonials() {
           />
           <div className="flex items-center gap-2 text-sm">
             <div className="flex text-primary-light" aria-hidden="true">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <FiStar key={i} fill="currentColor" />
-              ))}
+              <FiStar fill="currentColor" />
+              <FiStar fill="currentColor" />
+              <FiStar fill="currentColor" />
+              <FiStar fill="currentColor" />
+              <FiStar fill="currentColor" />
             </div>
-            <span className="font-semibold">{ratingSummary.average}</span>
-            <span className="text-text-muted">{ratingSummary.count} avaliações</span>
+            <span className="font-semibold">4.9</span>
+            <span className="text-text-muted">5mil+ avaliações</span>
           </div>
         </div>
 
         <ul className="mt-12 grid gap-6 sm:grid-cols-2">
-          {testimonials.map((testimonial) => (
-            <li key={testimonial.name} className="rounded-lg border border-border bg-surface/70 p-6 backdrop-blur-sm">
-              <p className="text-text-muted">“{testimonial.quote}”</p>
-              <div className="mt-4 flex items-center gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/30" aria-hidden="true" />
-                <div>
-                  <p className="text-sm font-semibold">{testimonial.name}</p>
-                  <p className="text-xs text-text-muted">{testimonial.role}</p>
-                </div>
+          <li className="rounded-lg border border-border bg-surface/70 p-6 backdrop-blur-sm">
+            <p className="text-text-muted">
+              “Saí do MaryCabeleleira me sentindo outra mulher. A Camila é uma maga das cores.”
+            </p>
+            <div className="mt-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/30" aria-hidden="true" />
+              <div>
+                <p className="text-sm font-semibold">Letícia Borges</p>
+                <p className="text-xs text-text-muted">Cliente há 3 anos</p>
               </div>
-            </li>
-          ))}
+            </div>
+          </li>
+          <li className="rounded-lg border border-border bg-surface/70 p-6 backdrop-blur-sm">
+            <p className="text-text-muted">
+              “Agendei minha hora pelo app e em 2 minutos já estava confirmado. Atendimento
+              impecável.”
+            </p>
+            <div className="mt-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/30" aria-hidden="true" />
+              <div>
+                <p className="text-sm font-semibold">Mariana Costa</p>
+                <p className="text-xs text-text-muted">Cliente há 1 ano</p>
+              </div>
+            </div>
+          </li>
         </ul>
       </Container>
     </section>

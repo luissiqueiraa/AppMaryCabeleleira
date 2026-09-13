@@ -12,3 +12,12 @@ export async function updateSettings(payload) {
   const { data } = await api.patch("/v1/settings", payload);
   return data;
 }
+
+export async function uploadSalonLogo(file) {
+  const formData = new FormData();
+  formData.append("logo", file);
+  const { data } = await api.patch("/v1/settings/logo", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return data;
+}

@@ -123,7 +123,7 @@ export default function CompletedAppointmentsHistory() {
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
                   <span className="truncate">{item.service.name}</span>
-                  <span className="shrink-0">{item.employee?.fullName ?? "—"}</span>
+                  <span className="shrink-0">{item.employee?.fullName ?? "Sem profissional"}</span>
                 </div>
               </li>
             ))}
@@ -153,7 +153,7 @@ export default function CompletedAppointmentsHistory() {
                       </div>
                     </td>
                     <td className="py-4 pr-4 align-middle text-gray-600">{item.service.name}</td>
-                    <td className="py-4 pr-4 align-middle text-gray-600">{item.employee?.fullName ?? "—"}</td>
+                    <td className="py-4 pr-4 align-middle text-gray-600">{item.employee?.fullName ?? "Sem profissional"}</td>
                     <td className="py-4 pr-4 align-middle font-semibold whitespace-nowrap text-gray-900">
                       {formatBRL(item.price)}
                     </td>

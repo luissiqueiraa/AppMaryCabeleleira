@@ -236,6 +236,7 @@ model SalonSettings {
   address   String?
   phone     String?
   email     String?
+  logoUrl   String?
   hours     Json
   updatedAt DateTime @updatedAt
 

@@ -1,12 +1,5 @@
 import { FiInstagram, FiFacebook, FiMapPin, FiPhone } from "react-icons/fi";
 import Container from "../ui/Container";
-import { services } from "../../data/services";
-
-const COMPANY_LINKS = [
-  { label: "Sobre", href: "#sobre" },
-  { label: "Equipe", href: "#equipe" },
-  { label: "Depoimentos", href: "#depoimentos" },
-];
 
 export default function Footer() {
   return (
@@ -32,26 +25,52 @@ export default function Footer() {
         <nav aria-label="Serviços">
           <h3 className="text-sm font-semibold tracking-wide uppercase">Serviços</h3>
           <ul className="mt-4 space-y-2">
-            {services.slice(0, 5).map((service) => (
-              <li key={service.name}>
-                <a href="#servicos" className="text-sm text-text-muted hover:text-text">
-                  {service.name}
-                </a>
-              </li>
-            ))}
+            <li>
+              <a href="#servicos" className="text-sm text-text-muted hover:text-text">
+                Cortes
+              </a>
+            </li>
+            <li>
+              <a href="#servicos" className="text-sm text-text-muted hover:text-text">
+                Coloração
+              </a>
+            </li>
+            <li>
+              <a href="#servicos" className="text-sm text-text-muted hover:text-text">
+                Progressivas
+              </a>
+            </li>
+            <li>
+              <a href="#servicos" className="text-sm text-text-muted hover:text-text">
+                Escovas
+              </a>
+            </li>
+            <li>
+              <a href="#servicos" className="text-sm text-text-muted hover:text-text">
+                Botox & Selagem
+              </a>
+            </li>
           </ul>
         </nav>
 
         <nav aria-label="Empresa">
           <h3 className="text-sm font-semibold tracking-wide uppercase">Empresa</h3>
           <ul className="mt-4 space-y-2">
-            {COMPANY_LINKS.map((link) => (
-              <li key={link.href}>
-                <a href={link.href} className="text-sm text-text-muted hover:text-text">
-                  {link.label}
-                </a>
-              </li>
-            ))}
+            <li>
+              <a href="#sobre" className="text-sm text-text-muted hover:text-text">
+                Sobre
+              </a>
+            </li>
+            <li>
+              <a href="#equipe" className="text-sm text-text-muted hover:text-text">
+                Equipe
+              </a>
+            </li>
+            <li>
+              <a href="#depoimentos" className="text-sm text-text-muted hover:text-text">
+                Depoimentos
+              </a>
+            </li>
           </ul>
         </nav>
 

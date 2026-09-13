@@ -4,14 +4,6 @@ import { FiMenu, FiX } from "react-icons/fi";
 import Button from "../ui/Button";
 import Container from "../ui/Container";
 
-const LINKS = [
-  { label: "Início", href: "#hero" },
-  { label: "Serviços", href: "#servicos" },
-  { label: "Galeria", href: "#galeria" },
-  { label: "Profissionais", href: "#equipe" },
-  { label: "Agendamento", href: "#agendamento" },
-];
-
 export default function Navbar() {
   const [open, setOpen] = useState(false);
 
@@ -23,15 +15,21 @@ export default function Navbar() {
         </Link>
 
         <nav aria-label="Navegação principal" className="hidden items-center gap-8 lg:flex">
-          {LINKS.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="text-sm font-medium text-text-muted transition-colors hover:text-text"
-            >
-              {link.label}
-            </a>
-          ))}
+          <a href="#hero" className="text-sm font-medium text-text-muted transition-colors hover:text-text">
+            Início
+          </a>
+          <a href="#servicos" className="text-sm font-medium text-text-muted transition-colors hover:text-text">
+            Serviços
+          </a>
+          <a href="#galeria" className="text-sm font-medium text-text-muted transition-colors hover:text-text">
+            Galeria
+          </a>
+          <a href="#equipe" className="text-sm font-medium text-text-muted transition-colors hover:text-text">
+            Profissionais
+          </a>
+          <a href="#agendamento" className="text-sm font-medium text-text-muted transition-colors hover:text-text">
+            Agendamento
+          </a>
         </nav>
 
         <div className="hidden items-center gap-4 lg:flex">
@@ -58,16 +56,41 @@ export default function Navbar() {
       {open && (
         <nav aria-label="Navegação móvel" className="border-t border-border bg-bg lg:hidden">
           <Container className="flex flex-col gap-4 py-4">
-            {LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-sm font-medium text-text-muted hover:text-text"
-                onClick={() => setOpen(false)}
-              >
-                {link.label}
-              </a>
-            ))}
+            <a
+              href="#hero"
+              className="text-sm font-medium text-text-muted hover:text-text"
+              onClick={() => setOpen(false)}
+            >
+              Início
+            </a>
+            <a
+              href="#servicos"
+              className="text-sm font-medium text-text-muted hover:text-text"
+              onClick={() => setOpen(false)}
+            >
+              Serviços
+            </a>
+            <a
+              href="#galeria"
+              className="text-sm font-medium text-text-muted hover:text-text"
+              onClick={() => setOpen(false)}
+            >
+              Galeria
+            </a>
+            <a
+              href="#equipe"
+              className="text-sm font-medium text-text-muted hover:text-text"
+              onClick={() => setOpen(false)}
+            >
+              Profissionais
+            </a>
+            <a
+              href="#agendamento"
+              className="text-sm font-medium text-text-muted hover:text-text"
+              onClick={() => setOpen(false)}
+            >
+              Agendamento
+            </a>
             <Link to="/login" className="text-sm font-medium text-text-muted hover:text-text">
               Entrar
             </Link>

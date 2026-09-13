@@ -8,6 +8,7 @@ function toSettingsDto(settings) {
     address: settings.address,
     phone: settings.phone,
     email: settings.email,
+    logoUrl: settings.logoUrl,
     hours: settings.hours,
     updatedAt: settings.updatedAt,
   };
@@ -31,6 +32,24 @@ export async function updateSettings(payload, req) {
   await recordAuditLog({
     userId: req.user.id,
     action: "settings.update",
+    entity: "SalonSettings",
+    entityId: settings.id,
+    req,
+  });
+  return toSettingsDto(updated);
+}
+
+export async function updateLogo(filename, req) {
+  const settings = await settingsRepository.findSettings();
+  if (!settings) {
+    throw new AppError("Salon settings are not configured", 404);
+  }
+
+  const logoUrl = `/uploads/logos/${filename}`;
+  const updated = await settingsRepository.updateSettings(settings.id, { logoUrl });
+  await recordAuditLog({
+    userId: req.user.id,
+    action: "settings.update_logo",
     entity: "SalonSettings",
     entityId: settings.id,
     req,

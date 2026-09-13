@@ -41,12 +41,12 @@ export default function BookingSummaryCard({
       </div>
 
       <dl className="mt-4 space-y-3 rounded-lg border border-gray-200 bg-white p-5 text-sm shadow-sm">
-        <Row label="Duração" value={service ? `${service.duration} min` : "—"} />
+        <Row label="Duração" value={`${service ? service.duration : 0} min`} />
         <Row label="Pagamento" value="No salão" />
         <div className="flex items-center justify-between border-t border-gray-100 pt-3">
           <p className="text-gray-500">Total estimado</p>
           <p className="font-display text-lg font-semibold text-gray-900">
-            {service ? `R$ ${formatPrice(service.price)}` : "—"}
+            R$ {formatPrice(service ? service.price : 0)}
           </p>
         </div>
       </dl>
