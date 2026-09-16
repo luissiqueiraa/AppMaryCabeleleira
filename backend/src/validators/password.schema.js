@@ -15,3 +15,10 @@ export const staffPasswordSchema = z
   .string()
   .min(6, "Password must have at least 6 characters")
   .max(72, "Password must have at most 72 characters");
+
+// Cadastro público (cliente): só exige tamanho, sem regras de complexidade —
+// pedido explícito do produto para reduzir a fricção no registro.
+export const registerPasswordSchema = z
+  .string()
+  .min(7, "Password must have more than 6 characters")
+  .max(72, "Password must have at most 72 characters");

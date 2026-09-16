@@ -21,7 +21,13 @@ model User {
   roleId       String?
   fullName     String
   email        String     @unique
-  passwordHash String
+  // Nulo em contas criadas via Google: não existe senha local para conferir.
+  // O login por e-mail/senha recusa essas contas explicitamente.
+  passwordHash String?
+  // uid do Firebase, preenchido no primeiro login com Google. Numa conta que
+  // já existia por e-mail/senha, o vínculo é feito no login (o Google já
+  // confirmou a posse do e-mail).
+  firebaseUid  String?    @unique
   phoneNumber  String?
   status       UserStatus @default(active)
   lastLoginAt  DateTime?

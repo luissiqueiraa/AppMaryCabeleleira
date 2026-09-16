@@ -7,5 +7,8 @@ const ORIGIN = ENV.API_URL.replace(/\/api\/?$/, "");
 
 export function resolveAssetUrl(path) {
   if (!path) return null;
+  // Foto de perfil vinda do Google já é uma URL absoluta — só os caminhos
+  // relativos (/uploads/...) precisam do prefixo do backend.
+  if (/^https?:\/\//i.test(path)) return path;
   return `${ORIGIN}${path}`;
 }

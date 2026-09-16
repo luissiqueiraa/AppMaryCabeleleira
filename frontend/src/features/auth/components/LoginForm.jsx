@@ -31,7 +31,7 @@ export default function LoginForm() {
           value: values.email,
           onChange: handleChange,
           onBlur: handleBlur,
-          placeholder: "seu@email.com",
+          placeholder: "Digite seu email",
         }}
       />
 
@@ -46,7 +46,7 @@ export default function LoginForm() {
           value: values.password,
           onChange: handleChange,
           onBlur: handleBlur,
-          placeholder: "••••••••",
+          placeholder: "Digite sua senha",
         }}
       />
 

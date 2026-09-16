@@ -38,7 +38,7 @@ export default function RegisterForm() {
           value: values.fullName,
           onChange: handleChange,
           onBlur: handleBlur,
-          placeholder: t("fields.fullName.placeholder"),
+          placeholder: "Digite seu nome",
         }}
       />
 
@@ -55,7 +55,7 @@ export default function RegisterForm() {
           value: values.phoneNumber,
           onChange: handleChange,
           onBlur: handleBlur,
-          placeholder: t("fields.phoneNumber.placeholder"),
+          placeholder: "Digite seu telefone",
         }}
       />
 
@@ -73,7 +73,7 @@ export default function RegisterForm() {
             value: values.email,
             onChange: handleChange,
             onBlur: handleBlur,
-            placeholder: t("fields.email.placeholder"),
+            placeholder: "Digite seu email"
           }}
         />
       </div>
@@ -91,7 +91,7 @@ export default function RegisterForm() {
             value: values.password,
             onChange: handleChange,
             onBlur: handleBlur,
-            placeholder: t("fields.password.placeholder"),
+            placeholder: "Digite sua senha",
           }}
         />
         <PasswordStrength password={values.password} />
@@ -108,7 +108,7 @@ export default function RegisterForm() {
           value: values.confirmPassword,
           onChange: handleChange,
           onBlur: handleBlur,
-          placeholder: t("fields.confirmPassword.placeholder"),
+          placeholder: "Digite novamente sua senha",
         }}
       />
 

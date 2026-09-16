@@ -7,6 +7,7 @@ import {
   hashToken,
 } from "../utils/token.js";
 import { recordAuditLog } from "../utils/auditLogger.js";
+import { getFirebaseAuth } from "../config/firebase.js";
 import * as authRepository from "../repositories/auth.repository.js";
 
 const MAX_FAILED_ATTEMPTS = 5;
@@ -83,6 +84,11 @@ export async function login({ email, password }, req) {
     throw new AppError("Account temporarily locked due to multiple failed login attempts", 429);
   }
 
+  // Conta criada pelo Google nunca teve senha local — não há hash para conferir.
+  if (!user.passwordHash) {
+    throw new AppError("This account uses Google sign-in", 401);
+  }
+
   const isPasswordValid = await verifyPassword(password, user.passwordHash);
   if (!isPasswordValid) {
     const attempts = user.failedLoginAttempts + 1;
@@ -106,6 +112,84 @@ export async function login({ email, password }, req) {
   await authRepository.registerSuccessfulLogin(user.id);
   const session = await issueSession(user);
   await recordAuditLog({ userId: user.id, action: "auth.login", entity: "User", entityId: user.id, req });
+
+  return { user: toSafeUser(user), ...session };
+}
+
+// Login com Google via Firebase: o frontend faz o popup do Google, recebe um
+// ID token do Firebase e manda pra cá. Quem decide se a pessoa entra é este
+// backend — o ID token é só a prova de que o Google confirmou o e-mail.
+export async function loginWithGoogle(idToken, req) {
+  const firebaseAuth = getFirebaseAuth();
+  if (!firebaseAuth) {
+    throw new AppError("Google sign-in is not configured", 503);
+  }
+
+  let decoded;
+  try {
+    decoded = await firebaseAuth.verifyIdToken(idToken, true);
+  } catch {
+    throw new AppError("Invalid Google credentials", 401);
+  }
+
+  const { uid, email, email_verified: emailVerified, name, picture } = decoded;
+  if (!email || !emailVerified) {
+    throw new AppError("Google account has no verified email", 401);
+  }
+
+  let user = await authRepository.findUserByFirebaseUid(uid);
+
+  if (!user) {
+    const existingByEmail = await authRepository.findUserByEmail(email);
+
+    if (existingByEmail) {
+      // Mesma pessoa entrando pelo Google numa conta que já existia por
+      // e-mail/senha: o Google acabou de provar a posse do e-mail, então
+      // vinculamos em vez de barrar com "e-mail já em uso".
+      user = await authRepository.linkFirebaseUid(existingByEmail.id, uid);
+      await recordAuditLog({
+        userId: user.id,
+        action: "auth.google_linked",
+        entity: "User",
+        entityId: user.id,
+        req,
+      });
+    } else {
+      const clientRole = await authRepository.findRoleByName("client");
+      if (!clientRole) {
+        throw new AppError("Default role is not configured", 500);
+      }
+
+      user = await authRepository.createUserFromGoogle({
+        fullName: name?.trim() || email.split("@")[0],
+        email,
+        firebaseUid: uid,
+        avatarUrl: picture ?? null,
+        roleId: clientRole.id,
+      });
+      await recordAuditLog({
+        userId: user.id,
+        action: "auth.google_register",
+        entity: "User",
+        entityId: user.id,
+        req,
+      });
+    }
+  }
+
+  if (user.status !== "active") {
+    throw new AppError("Account is not active", 403);
+  }
+
+  await authRepository.registerSuccessfulLogin(user.id);
+  const session = await issueSession(user);
+  await recordAuditLog({
+    userId: user.id,
+    action: "auth.google_login",
+    entity: "User",
+    entityId: user.id,
+    req,
+  });
 
   return { user: toSafeUser(user), ...session };
 }
@@ -207,6 +291,10 @@ export async function changeMyPassword(userId, { currentPassword, newPassword },
   const user = await authRepository.findUserById(userId);
   if (!user) {
     throw new AppError("User not found", 404);
+  }
+
+  if (!user.passwordHash) {
+    throw new AppError("This account uses Google sign-in", 422);
   }
 
   const isCurrentPasswordValid = await verifyPassword(currentPassword, user.passwordHash);

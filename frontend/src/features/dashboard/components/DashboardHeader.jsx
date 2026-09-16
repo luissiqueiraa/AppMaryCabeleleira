@@ -1,6 +1,9 @@
 import { FiMenu } from "react-icons/fi";
-import NotificationBell from "./NotificationBell";
 import AccountMenu from "./AccountMenu";
+
+// Sistema de notificações implementado (NotificationBell + backend) mas
+// escondido da UI por enquanto — a exibição aqui volta quando o recurso
+// for retomado, sem precisar refazer nada.
 
 export default function DashboardHeader({
   title,
@@ -33,8 +36,6 @@ export default function DashboardHeader({
 
         <div className="ml-auto flex items-center gap-3">
           {mobileAction && <span className="lg:hidden">{mobileAction}</span>}
-
-          <NotificationBell className={mobileAction ? "hidden lg:flex" : ""} />
 
           <AccountMenu user={user} onLogout={onLogout} />
 

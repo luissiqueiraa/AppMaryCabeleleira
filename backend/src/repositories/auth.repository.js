@@ -37,6 +37,34 @@ export function createUserWithRole({ fullName, email, passwordHash, phoneNumber,
   });
 }
 
+export function findUserByFirebaseUid(firebaseUid) {
+  return prisma.user.findFirst({
+    where: { firebaseUid, deletedAt: null },
+    include: { role: true },
+  });
+}
+
+// Conta nova vinda do Google: sem passwordHash (a pessoa só entra pelo Google
+// até definir uma senha por "esqueci minha senha").
+export function createUserFromGoogle({ fullName, email, firebaseUid, avatarUrl, roleId }) {
+  return prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: { fullName, email, firebaseUid, avatarUrl, roleId },
+      include: { role: true },
+    });
+    await tx.userRole.create({ data: { userId: user.id, roleId } });
+    return user;
+  });
+}
+
+export function linkFirebaseUid(userId, firebaseUid) {
+  return prisma.user.update({
+    where: { id: userId },
+    data: { firebaseUid },
+    include: { role: true },
+  });
+}
+
 export function registerFailedLoginAttempt(userId, { attempts, lockedUntil }) {
   return prisma.user.update({
     where: { id: userId },

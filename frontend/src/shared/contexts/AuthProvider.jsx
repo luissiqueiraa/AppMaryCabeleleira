@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import * as authService from "../../features/auth/services/authService";
+import { signInWithGoogle } from "../services/firebase";
 import { refreshAccessToken } from "../services/api";
 import { setAccessToken, clearAccessToken, onUnauthorized } from "../services/tokenStore";
 import { AuthContext } from "./AuthContext";
@@ -42,6 +43,16 @@ export function AuthProvider({ children }) {
     return result.data.user;
   }, []);
 
+  // Popup do Google -> ID token do Firebase -> nossa sessão (JWT + refresh
+  // cookie). O backend é quem decide se a conta entra ou é criada.
+  const loginWithGoogle = useCallback(async () => {
+    const idToken = await signInWithGoogle();
+    const result = await authService.loginWithGoogle(idToken);
+    setAccessToken(result.data.accessToken);
+    setUser(result.data.user);
+    return result.data.user;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await authService.logout();
@@ -70,11 +81,12 @@ export function AuthProvider({ children }) {
       isAuthenticated: Boolean(user),
       isBootstrapping,
       login,
+      loginWithGoogle,
       logout,
       logoutAll,
       updateUser,
     }),
-    [user, isBootstrapping, login, logout, logoutAll, updateUser]
+    [user, isBootstrapping, login, loginWithGoogle, logout, logoutAll, updateUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

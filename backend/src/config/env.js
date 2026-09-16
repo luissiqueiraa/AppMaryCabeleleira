@@ -15,4 +15,14 @@ export const env = {
 
   ownerEmail: process.env.OWNER_EMAIL,
   ownerPassword: process.env.OWNER_PASSWORD,
+
+  // Credenciais da service account do Firebase (Console > Configurações do
+  // projeto > Contas de serviço > Gerar nova chave privada). A privateKey vem
+  // do JSON com "\n" escapado — o .env guarda essa forma escapada e aqui ela
+  // volta a ser quebra de linha de verdade, senão o PEM não é aceito.
+  firebase: {
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+  },
 };

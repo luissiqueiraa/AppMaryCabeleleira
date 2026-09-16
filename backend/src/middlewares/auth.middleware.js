@@ -20,6 +20,6 @@ export function authenticate(req, res, next) {
     };
     next();
   } catch {
-    next(new AppError("Invalid or expired access token", 401));
+    next(new AppError("Invalido ou token experiado", 401));
   }
 }

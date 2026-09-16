@@ -26,7 +26,7 @@
       }
     }
   },
-  "passwordHint": "Mínimo de 8 caracteres, com maiúscula, minúscula, número e caractere especial.",
+  "passwordHint": "Mínimo de 7 caracteres.",
   "passwordStrength": {
     "label": "Força da senha",
     "weak": "Fraca",
@@ -53,7 +53,7 @@
     "phoneRequired": "Informe seu telefone.",
     "phoneInvalid": "Informe um telefone válido.",
     "passwordRequired": "Informe uma senha.",
-    "passwordWeak": "A senha não atende aos requisitos.",
+    "passwordWeak": "A senha deve ter mais de 6 caracteres.",
     "confirmPasswordRequired": "Confirme sua senha.",
     "confirmPasswordMismatch": "As senhas não coincidem.",
     "termsRequired": "Você precisa aceitar os Termos de Uso e a Política de Privacidade.",

@@ -6,6 +6,7 @@ import { validateRequest } from "../middlewares/validateRequest.middleware.js";
 import {
   registerSchema,
   loginSchema,
+  googleLoginSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
   updateMeSchema,
@@ -16,6 +17,7 @@ const router = Router();
 
 router.post("/register", validateRequest(registerSchema), authController.register);
 router.post("/login", validateRequest(loginSchema), authController.login);
+router.post("/google", validateRequest(googleLoginSchema), authController.googleLogin);
 router.post("/refresh-token", authController.refreshToken);
 router.post("/logout", authController.logout);
 router.post("/logout-all", authenticate, authController.logoutAll);
