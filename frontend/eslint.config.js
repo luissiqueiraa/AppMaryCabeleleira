@@ -18,4 +18,12 @@ export default defineConfig([
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },
+  // Os testes rodam no Jest, não no navegador: usam describe/it/expect e, no
+  // setup, process.env. Sem este bloco o lint acusa todos como indefinidos.
+  {
+    files: ['tests/**/*.{js,jsx}'],
+    languageOptions: {
+      globals: { ...globals.jest, ...globals.node },
+    },
+  },
 ])
