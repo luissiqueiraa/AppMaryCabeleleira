@@ -18,7 +18,10 @@ services:
       retries: 5
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      # O Dockerfile tem dois alvos; aqui vale o de desenvolvimento (nodemon).
+      target: dev
     container_name: marycabelo_api
     restart: unless-stopped
     env_file: ./backend/.env

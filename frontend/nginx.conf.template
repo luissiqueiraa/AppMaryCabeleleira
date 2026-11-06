@@ -1,0 +1,30 @@
+server {
+    listen ${PORT};
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # Compressão para o que vale a pena: JS, CSS e JSON.
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # O roteamento é do React: qualquer caminho desconhecido devolve o
+    # index.html. Sem isso, recarregar a página em /admin ou /privacy-policy
+    # dá 404, porque esses arquivos não existem no disco.
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Os arquivos de build levam hash no nome, então podem ser guardados para
+    # sempre. O index nunca: é ele que aponta para os hashes novos a cada
+    # deploy.
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    location = /index.html {
+        add_header Cache-Control "no-cache";
+    }
+}
