@@ -9,18 +9,26 @@ function ProfessionalAvatar({ professional, isSelected }) {
   );
 }
 
-export default function ProfessionalList({ professionals, isLoading, selectedId, onSelect, selectedService, onEditService }) {
+export default function ProfessionalList({
+  professionals,
+  isLoading,
+  selectedId,
+  onSelect,
+  selectedServices = [],
+  totalDuration = 0,
+  onEditService,
+}) {
   return (
     <section aria-labelledby="professional-section-title">
-      {selectedService && (
-        <div className="flex items-center justify-between rounded-lg bg-pink-50 px-4 py-3">
-          <p className="text-sm font-medium text-pink-700">
-            {selectedService.name} · {selectedService.duration} min
+      {selectedServices.length > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-lg bg-pink-50 px-4 py-3">
+          <p className="min-w-0 text-sm font-medium text-pink-700">
+            {selectedServices.map((service) => service.name).join(" + ")} · {totalDuration} min
           </p>
           <button
             type="button"
             onClick={onEditService}
-            className="text-sm font-semibold text-pink-700 hover:underline"
+            className="shrink-0 text-sm font-semibold text-pink-700 hover:underline"
           >
             Editar
           </button>

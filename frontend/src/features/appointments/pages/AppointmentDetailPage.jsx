@@ -43,7 +43,7 @@ export default function AppointmentDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="mx-auto max-w-xl rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
       <div className="flex items-start justify-between gap-3">
         <h2 className="font-display text-xl font-semibold text-gray-900">{appointment.service}</h2>
         <StatusBadge status={appointment.status} />

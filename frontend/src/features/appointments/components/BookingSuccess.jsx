@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { FiCheck, FiBell } from "react-icons/fi";
+import { FiCheck, FiCalendar } from "react-icons/fi";
 
 export default function BookingSuccess({ professionalName, dateLabel, time }) {
   return (
@@ -14,19 +14,22 @@ export default function BookingSuccess({ professionalName, dateLabel, time }) {
         foi confirmado para <strong className="text-gray-700">{dateLabel} às {time}</strong>.
       </p>
 
+      {/* Só o que o app realmente faz. Antes havia a promessa de avisar 1h
+          antes e um limite de 4h para reagendar: não existe envio de lembrete
+          no sistema, e não há prazo mínimo para remarcar. */}
       <div className="mt-6 flex items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 text-left shadow-sm">
-        <FiBell className="mt-0.5 shrink-0 text-pink-500" aria-hidden="true" />
+        <FiCalendar className="mt-0.5 shrink-0 text-pink-500" aria-hidden="true" />
         <p className="text-sm text-gray-500">
-          Avisaremos 1h antes do horário. Você pode reagendar até 4h antes.
+          Precisou mudar? Você pode remarcar ou cancelar em Meus agendamentos.
         </p>
       </div>
 
-      <button
-        type="button"
+      <Link
+        to="/appointments"
         className="mt-6 w-full rounded-full bg-pink-600 py-3 text-sm font-semibold text-white shadow-sm hover:bg-pink-700"
       >
-        Adicionar ao calendário
-      </button>
+        Ver meus agendamentos
+      </Link>
 
       <Link to="/dashboard" className="mt-4 text-sm font-medium text-gray-500 hover:text-gray-700">
         Voltar para o início

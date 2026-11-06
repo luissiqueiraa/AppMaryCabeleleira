@@ -9,14 +9,8 @@ export default function BusinessHoursCard({ hours, onChange }) {
     onChange(hours.map((day) => (day.id === id ? { ...day, [field]: value } : day)));
   }
 
-  function copyToAll(id) {
-    const source = hours.find((day) => day.id === id);
-    if (!source) return;
-    onChange(hours.map((day) => (day.id === id ? day : { ...day, open: source.open, close: source.close })));
-  }
-
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
       <h3 className="font-display text-lg font-semibold text-gray-900">Horário de funcionamento</h3>
       <p className="mt-1 text-sm text-gray-500">Define a janela em que clientes podem agendar.</p>
 
@@ -42,13 +36,6 @@ export default function BusinessHoursCard({ hours, onChange }) {
                 onChange={(event) => updateTime(day.id, "close", event.target.value)}
                 className="w-28 rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus-visible:border-pink-600 focus-visible:ring-2 focus-visible:ring-pink-100 disabled:bg-gray-50 disabled:text-gray-400"
               />
-              <button
-                type="button"
-                onClick={() => copyToAll(day.id)}
-                className="text-sm font-medium text-gray-400 hover:text-pink-600"
-              >
-                Copiar
-              </button>
             </div>
           </li>
         ))}

@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { useRegisterForm } from "../hooks/useRegisterForm";
 import FormField from "../../../shared/components/FormField";
 import PasswordInput from "./PasswordInput";
-import PasswordStrength from "./PasswordStrength";
 
 export default function RegisterForm() {
   const { t } = useTranslation("register");
@@ -78,24 +77,21 @@ export default function RegisterForm() {
         />
       </div>
 
-      <div>
-        <PasswordInput
-          id="password"
-          name="password"
-          label={t("fields.password.label")}
-          error={touched.password ? errors.password : undefined}
-          hint={!touched.password || !errors.password ? t("passwordHint") : undefined}
-          inputProps={{
-            autoComplete: "new-password",
-            maxLength: 128,
-            value: values.password,
-            onChange: handleChange,
-            onBlur: handleBlur,
-            placeholder: "Digite sua senha",
-          }}
-        />
-        <PasswordStrength password={values.password} />
-      </div>
+      <PasswordInput
+        id="password"
+        name="password"
+        label={t("fields.password.label")}
+        error={touched.password ? errors.password : undefined}
+        hint={!touched.password || !errors.password ? t("passwordHint") : undefined}
+        inputProps={{
+          autoComplete: "new-password",
+          maxLength: 128,
+          value: values.password,
+          onChange: handleChange,
+          onBlur: handleBlur,
+          placeholder: "Digite sua senha",
+        }}
+      />
 
       <PasswordInput
         id="confirmPassword"

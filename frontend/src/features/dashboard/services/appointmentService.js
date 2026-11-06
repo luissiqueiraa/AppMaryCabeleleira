@@ -29,3 +29,9 @@ export async function cancelAppointment(id) {
   const { data } = await api.patch(`/v1/appointments/${id}/cancel`);
   return data;
 }
+
+// Caixa do salão (total recebido e o do mês corrente), somado no backend.
+export async function getRevenueSummary() {
+  const { data } = await api.get("/v1/appointments/revenue");
+  return data;
+}

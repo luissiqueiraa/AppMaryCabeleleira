@@ -75,7 +75,7 @@ export default function ServiceHistoryPage() {
         )}
       </div>
 
-      <div className="hidden rounded-lg border border-gray-200 bg-white p-6 shadow-sm lg:block">
+      <div className="hidden rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6 lg:block">
         <div className="flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold text-gray-900">Todos os atendimentos</h2>
           <AutocompleteFilter

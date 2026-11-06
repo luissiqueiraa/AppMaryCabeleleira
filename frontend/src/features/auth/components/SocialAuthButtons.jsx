@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { FaGoogle } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../shared/contexts/useAuth";
@@ -19,6 +19,7 @@ const SILENT_ERRORS = [
 export default function SocialAuthButtons() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const toast = useToast();
   const { loginWithGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +31,20 @@ export default function SocialAuthButtons() {
     try {
       const user = await loginWithGoogle();
       const isStaff = [ROLES.OWNER, ROLES.ADMIN, ROLES.EMPLOYEE].includes(user.role?.name);
-      navigate(isStaff ? "/admin" : "/dashboard");
+
+      // Conta nova pelo Google não tem telefone: manda direto pra tela que pede
+      // o número em vez de deixar o PrivateRoute redirecionar depois (evita o
+      // "pisca" do dashboard aparecendo por um instante).
+      if (!isStaff && !user.phoneNumber) {
+        navigate("/complete-profile");
+        return;
+      }
+
+      // A home manda a cliente para o login com "next" quando ela clicou em
+      // agendar: ao entrar, ela continua de onde parou. Equipe vai sempre para
+      // o painel — não agenda para si mesma.
+      const next = searchParams.get("next");
+      navigate(isStaff ? "/admin" : (next ?? "/dashboard"));
     } catch (error) {
       if (!SILENT_ERRORS.includes(error?.code)) {
         toast.error(

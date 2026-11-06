@@ -2,20 +2,23 @@ import { FiCheck } from "react-icons/fi";
 import Container from "../ui/Container";
 import Button from "../ui/Button";
 import GradientBlock from "../ui/GradientBlock";
+import Reveal from "../ui/Reveal";
 
 export default function About() {
   return (
     <section id="sobre" className="py-20 sm:py-28">
       <Container className="grid items-center gap-12 lg:grid-cols-2">
-        <div className="relative">
+        <Reveal className="relative">
           <GradientBlock className="h-72 sm:h-96" />
           <div className="absolute -top-4 -left-4 rounded-md border border-border bg-surface px-4 py-2 text-center shadow-lg">
             <p className="font-display text-lg font-semibold text-primary-light">2010</p>
             <p className="text-[10px] tracking-wide text-text-muted uppercase">desde</p>
           </div>
-        </div>
+        </Reveal>
 
-        <div>
+        {/* O texto entra logo depois da imagem, para o olho ir da foto para a
+            história. */}
+        <Reveal delay={120}>
           <p className="mb-3 text-xs font-semibold tracking-[0.2em] text-primary-light uppercase">
             Nossa história
           </p>
@@ -47,7 +50,7 @@ export default function About() {
           <Button to="/agendar" variant="primary" className="mt-8">
             Saber mais
           </Button>
-        </div>
+        </Reveal>
       </Container>
     </section>
   );

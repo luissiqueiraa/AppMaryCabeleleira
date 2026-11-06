@@ -11,6 +11,7 @@ import DateTimeSection from "../components/DateTimeSection";
 import BookingSummaryCard from "../components/BookingSummaryCard";
 import BookingConfirmationModal from "../components/BookingConfirmationModal";
 import BookingSuccess from "../components/BookingSuccess";
+import PixPaymentPanel from "../components/PixPaymentPanel";
 
 const TOTAL_STEPS = 4;
 
@@ -30,8 +31,14 @@ export default function NewAppointmentPage() {
     );
   }
 
+  // Pix: o agendamento ainda não existe — a tela espera a confirmação do
+  // pagamento, que é quando o horário passa a ser dela.
+  if (flow.status === "awaitingPayment" && flow.payment) {
+    return <PixPaymentPanel payment={flow.payment} onCancel={flow.cancelPayment} />;
+  }
+
   const stepIsValid = {
-    1: Boolean(flow.service),
+    1: flow.selectedServices.length > 0,
     2: Boolean(flow.professionalId),
     3: Boolean(flow.date && flow.time),
   }[flow.step];
@@ -75,13 +82,15 @@ export default function NewAppointmentPage() {
             </p>
           )}
 
-          <div className="px-4 py-6 lg:hidden">
+          {/* O assistente por etapas continua até lg. Sem o max-w ele esticava
+              de ponta a ponta no tablet, deixando cards enormes e vazios. */}
+          <div className="mx-auto max-w-2xl px-4 py-6 sm:px-6 lg:hidden">
             <div className={flow.step === 1 ? "block" : "hidden"}>
               <ServiceList
                 services={flow.services}
                 isLoading={flow.isLoadingCatalog}
-                selectedId={flow.service?.id}
-                onSelect={flow.selectService}
+                selectedIds={flow.selectedServices.map((item) => item.id)}
+                onToggle={flow.toggleService}
               />
             </div>
 
@@ -91,7 +100,8 @@ export default function NewAppointmentPage() {
                 isLoading={flow.isLoadingCatalog}
                 selectedId={flow.professionalId}
                 onSelect={flow.selectProfessional}
-                selectedService={flow.service}
+                selectedServices={flow.selectedServices}
+                totalDuration={flow.totalDuration}
                 onEditService={() => flow.setStep(1)}
               />
             </div>
@@ -106,20 +116,25 @@ export default function NewAppointmentPage() {
                 slots={flow.slots}
                 unavailableTimes={flow.unavailableTimes}
                 isLoadingAvailability={flow.isLoadingAvailability}
+                totalDuration={flow.totalDuration}
+                latestStart={flow.latestStart}
               />
             </div>
           </div>
 
           {flow.step === 4 && (
             <BookingConfirmationModal
-              service={flow.service}
+              services={flow.selectedServices}
+              totalDuration={flow.totalDuration}
+              totalPrice={flow.totalPrice}
               professional={flow.professional}
               professionalName={flow.professionalName}
               date={flow.date}
               dateLabel={flow.dateLabel}
               time={flow.time}
-              payOnSite={flow.payOnSite}
-              onTogglePayOnSite={flow.setPayOnSite}
+              paymentMethod={flow.paymentMethod}
+              onPaymentMethodChange={flow.setPaymentMethod}
+              onlinePaymentsEnabled={flow.onlinePaymentsEnabled}
               notes={flow.notes}
               onNotesChange={flow.setNotes}
               isLoading={flow.status === "loading"}
@@ -132,16 +147,16 @@ export default function NewAppointmentPage() {
 
           <div className="hidden lg:grid lg:grid-cols-[1fr_360px] lg:items-start lg:gap-8 lg:px-8 lg:py-8">
             <div className="space-y-6">
-              <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
                 <ServiceList
                   services={flow.services}
                   isLoading={flow.isLoadingCatalog}
-                  selectedId={flow.service?.id}
-                  onSelect={flow.selectService}
+                  selectedIds={flow.selectedServices.map((item) => item.id)}
+                  onToggle={flow.toggleService}
                 />
               </section>
 
-              <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
                 <ProfessionalList
                   professionals={flow.professionals}
                   isLoading={flow.isLoadingCatalog}
@@ -150,7 +165,7 @@ export default function NewAppointmentPage() {
                 />
               </section>
 
-              <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+              <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
                 <DateTimeSection
                   heading="Data & horário"
                   selectedDate={flow.date}
@@ -161,15 +176,22 @@ export default function NewAppointmentPage() {
                   slots={flow.slots}
                   unavailableTimes={flow.unavailableTimes}
                   isLoadingAvailability={flow.isLoadingAvailability}
+                  totalDuration={flow.totalDuration}
+                  latestStart={flow.latestStart}
                 />
               </section>
             </div>
 
             <BookingSummaryCard
-              service={flow.service}
+              services={flow.selectedServices}
+              totalDuration={flow.totalDuration}
+              totalPrice={flow.totalPrice}
               professionalName={flow.professionalName}
               dateLabel={flow.dateLabel}
               time={flow.time}
+              paymentMethod={flow.paymentMethod}
+              onPaymentMethodChange={flow.setPaymentMethod}
+              onlinePaymentsEnabled={flow.onlinePaymentsEnabled}
               isLoading={flow.status === "loading"}
               isComplete={flow.isComplete}
               onConfirm={flow.confirm}
@@ -184,7 +206,7 @@ export default function NewAppointmentPage() {
             type="button"
             onClick={handleMobileContinue}
             disabled={!stepIsValid}
-            className="flex w-full items-center justify-center gap-2 rounded-lg bg-pink-600 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mx-auto flex w-full max-w-2xl items-center justify-center gap-2 rounded-lg bg-pink-600 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Continuar
           </button>

@@ -26,14 +26,7 @@
       }
     }
   },
-  "passwordHint": "At least 8 characters, with uppercase, lowercase, number and special character.",
-  "passwordStrength": {
-    "label": "Password strength",
-    "weak": "Weak",
-    "fair": "Fair",
-    "good": "Good",
-    "strong": "Strong"
-  },
+  "passwordHint": "At least 6 characters.",
   "terms": {
     "prefix": "I agree to the",
     "serviceLink": "Terms of Service",
@@ -53,7 +46,7 @@
     "phoneRequired": "Enter your phone number.",
     "phoneInvalid": "Enter a valid phone number.",
     "passwordRequired": "Enter a password.",
-    "passwordWeak": "Password does not meet the requirements.",
+    "passwordWeak": "Password must have at least 6 characters.",
     "confirmPasswordRequired": "Confirm your password.",
     "confirmPasswordMismatch": "Passwords do not match.",
     "termsRequired": "You must accept the Terms of Service and the Privacy Policy.",

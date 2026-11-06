@@ -15,11 +15,6 @@ export async function updatePhoneNumber(payload) {
   return data;
 }
 
-export async function updatePreferences(payload) {
-  const { data } = await api.patch("/v1/auth/me", payload);
-  return data;
-}
-
 export async function deleteAccount() {
   const { data } = await api.delete("/v1/auth/me");
   return data;

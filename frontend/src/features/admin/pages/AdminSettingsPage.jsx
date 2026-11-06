@@ -1,16 +1,20 @@
 import { useEffect, useState } from "react";
 import SalonIdentityCard from "../components/SalonIdentityCard";
 import BusinessHoursCard from "../components/BusinessHoursCard";
+import DangerZoneCard from "../components/DangerZoneCard";
 import UnsavedChangesToast from "../../../shared/components/UnsavedChangesToast";
 import { getSettings, updateSettings, uploadSalonLogo } from "../../../shared/services/settingsService";
 import { settingsTabs } from "../data/mockAdminSettings";
 import { useToast } from "../../../shared/contexts/useToast";
+import { useAuth } from "../../../shared/contexts/useAuth";
+import { ROLES } from "../../../shared/constants/roles";
 import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
 const PLACEHOLDER_TABS = settingsTabs.filter((tab) => tab.id !== "salao" && tab.id !== "hours");
 
 export default function AdminSettingsPage() {
   const toast = useToast();
+  const { user } = useAuth();
   const [settings, setSettings] = useState(null);
   const [draft, setDraft] = useState(null);
   const [loadStatus, setLoadStatus] = useState("loading");
@@ -96,6 +100,17 @@ export default function AdminSettingsPage() {
         isUploadingLogo={isUploadingLogo}
       />
       <BusinessHoursCard hours={draft.hours} onChange={updateHours} />
+
+      {/* Admin e proprietária. Funcionária não chega nesta página, mas o card
+          fica fora do alcance dela de qualquer forma. */}
+      {[ROLES.OWNER, ROLES.ADMIN].includes(user?.role?.name) && (
+        <DangerZoneCard
+          onReset={(defaults) => {
+            setSettings(defaults);
+            setDraft(defaults);
+          }}
+        />
+      )}
 
       {PLACEHOLDER_TABS.map((tab) => (
         <p

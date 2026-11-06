@@ -166,7 +166,7 @@ export default function EmployeeFormModal({ employee, onClose, onSaved }) {
                             isSelected ? "border-pink-600 bg-pink-50" : "border-gray-200 hover:bg-gray-50"
                           }`}
                         >
-                          <Avatar name={user.fullName} size={32} />
+                          <Avatar name={user.fullName} avatarUrl={user.avatarUrl} size={32} />
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-semibold text-gray-900">{user.fullName}</p>
                             <p className="truncate text-xs text-gray-500">{user.email}</p>

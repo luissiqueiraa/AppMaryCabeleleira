@@ -3,7 +3,8 @@ import { FiCalendar, FiClock } from "react-icons/fi";
 import StatusBadge from "../../../shared/components/StatusBadge";
 
 export default function AppointmentCard({ appointment, onCancel }) {
-  const canManage = appointment.status === "confirmed";
+  // Pendente também pode remarcar/cancelar: o horário já está ocupado por ela.
+  const canManage = ["pending", "confirmed"].includes(appointment.status);
 
   return (
     <li className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">

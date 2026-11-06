@@ -38,7 +38,7 @@ export default function PersonalInfoForm({ profile, onSaved }) {
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
       <div className="flex items-center justify-between">
         <h3 className="font-display text-lg font-semibold text-gray-900">Dados pessoais</h3>
         <button

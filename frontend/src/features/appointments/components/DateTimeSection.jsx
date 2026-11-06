@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { getAvailableDays } from "../data/mockAvailability";
 
 function toSlots(times, unavailableTimes) {
@@ -16,6 +15,10 @@ export default function DateTimeSection({
   slots = [],
   unavailableTimes = new Set(),
   isLoadingAvailability = false,
+  // Duração somada dos serviços e último horário que ainda termina antes do
+  // fechamento: juntos explicam por que os horários do fim do dia sumiram.
+  totalDuration = 0,
+  latestStart = null,
 }) {
   const days = useMemo(() => getAvailableDays(hours), [hours]);
   const activeDay = days.find((day) => day.iso === selectedDate);
@@ -36,30 +39,14 @@ export default function DateTimeSection({
 
   return (
     <section aria-labelledby="datetime-section-title">
-      <div className="flex items-center justify-between">
+      {/* Em tela estreita o título e o mês dividem a linha e, quando não cabem,
+          quebram — antes se espremiam. As setas de mês saíram: eram botões sem
+          ação nenhuma, e a grade mostra os próximos dias, não um mês inteiro. */}
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h2 id="datetime-section-title" className="font-display text-lg font-semibold text-gray-900">
           {heading ?? monthLabel}
         </h2>
-        {heading ? (
-          <p className="text-sm text-gray-400">{monthLabel}</p>
-        ) : (
-          <div className="hidden gap-2 lg:flex">
-            <button
-              type="button"
-              aria-label="Mês anterior"
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50"
-            >
-              <FiChevronLeft size={16} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              aria-label="Próximo mês"
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-500 hover:bg-gray-50"
-            >
-              <FiChevronRight size={16} aria-hidden="true" />
-            </button>
-          </div>
-        )}
+        {heading && <p className="text-sm text-gray-400">{monthLabel}</p>}
       </div>
 
       <div role="radiogroup" aria-label="Data" className="mt-4 grid grid-cols-7 gap-1">
@@ -102,6 +89,28 @@ export default function DateTimeSection({
           </p>
         )}
       </div>
+
+      {/* O atendimento tem de terminar antes de o salão fechar, então os
+          horários do fim do dia desaparecem conforme os serviços escolhidos
+          ficam mais longos. Sem este aviso a grade parece simplesmente vazia. */}
+      {totalDuration > 0 && !activeDay?.disabled && (
+        <>
+          {latestStart === null ? (
+            <p
+              role="alert"
+              className="mt-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+            >
+              Os serviços escolhidos levam {totalDuration} min e não cabem no horário de
+              funcionamento deste dia. Escolha outro dia ou remova um procedimento.
+            </p>
+          ) : (
+            <p className="mt-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
+              O atendimento leva {totalDuration} min e precisa terminar antes de o salão fechar:
+              neste dia, o último horário possível é {latestStart}.
+            </p>
+          )}
+        </>
+      )}
 
       {isLoadingAvailability && <p className="mt-3 text-xs text-gray-400">Verificando disponibilidade...</p>}
 

@@ -15,6 +15,7 @@ function toUserDto(user) {
     phoneNumber: user.phoneNumber,
     status: user.status,
     role: user.role ? { id: user.role.id, name: user.role.name } : null,
+    avatarUrl: user.avatarUrl,
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
   };

@@ -21,3 +21,10 @@ export async function uploadSalonLogo(file) {
   });
   return data;
 }
+
+// Zona de perigo: apaga os dados e restaura o padrão de fábrica. O backend só
+// aceita da owner, com a frase de confirmação e a senha atual.
+export async function resetSystem(payload) {
+  const { data } = await api.post("/v1/settings/reset", payload);
+  return data;
+}

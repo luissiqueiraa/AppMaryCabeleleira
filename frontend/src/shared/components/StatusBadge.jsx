@@ -1,15 +1,14 @@
-// Agendamento confirmado (o padrão, sem etapa de aprovação) não tem badge
-// próprio — só vira visível quando chega num estado que importa destacar.
-const STATUS_MAP = {
-  completed: { label: "Finalizado", className: "bg-purple-50 text-purple-700" },
-  cancelled: { label: "Cancelado", className: "bg-red-50 text-red-600" },
-  active: { label: "Ativo", className: "bg-emerald-50 text-emerald-700" },
-  paused: { label: "Pausado", className: "bg-gray-100 text-gray-500" },
-};
+import { APPOINTMENT_STATUS } from "../constants/appointmentStatus";
+
+// Agendamento confirmado (o padrão, sem etapa de aprovação) não ganha badge
+// aqui: numa lista em que quase tudo está confirmado, a etiqueta em toda linha
+// é ruído. Onde a lista mistura situações — o histórico do painel — a etiqueta
+// aparece sempre, usando as mesmas cores de APPOINTMENT_STATUS.
+const HIDDEN_STATUSES = ["confirmed"];
 
 export default function StatusBadge({ status }) {
-  const config = STATUS_MAP[status];
-  if (!config) return null;
+  const config = APPOINTMENT_STATUS[status];
+  if (!config || HIDDEN_STATUSES.includes(status)) return null;
 
   return (
     <span

@@ -26,10 +26,14 @@ export const cancelAppointmentSchema = idParamSchema;
 // (assertNoConflict) não roda e dois clientes podem marcar o mesmo horário.
 export const createAppointmentSchema = {
   body: z.object({
-    serviceId: z.string().uuid(),
+    // Um agendamento pode juntar vários procedimentos (corte + escova, etc.).
+    // O teto evita um payload absurdo travando a agenda do dia inteiro.
+    serviceIds: z
+      .array(z.string().uuid())
+      .min(1, "Selecione ao menos um serviço")
+      .max(10, "Selecione no máximo 10 serviços"),
     employeeId: z.string().uuid("Selecione uma profissional"),
     scheduledAt: z.coerce.date(),
-    payOnSite: z.boolean().optional().default(true),
     notes: z.string().trim().max(500).optional(),
   }),
 };
@@ -54,3 +58,12 @@ export const updateAppointmentStatusSchema = {
   params: idParamSchema.params,
   body: z.object({ status: z.enum(["confirmed", "completed", "cancelled"]) }),
 };
+
+// Baixa manual do pagamento presencial. "pending" existe para desfazer um
+// clique errado — não é um estado que a equipe precise escolher ativamente.
+export const updateAppointmentPaymentSchema = {
+  params: idParamSchema.params,
+  body: z.object({ paymentStatus: z.enum(["paid", "pending"]) }),
+};
+
+export const deleteAppointmentSchema = idParamSchema;

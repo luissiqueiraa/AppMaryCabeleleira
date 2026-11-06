@@ -62,3 +62,30 @@ export async function updateAppointmentStatus(req, res, next) {
     next(error);
   }
 }
+
+export async function getRevenueSummary(req, res, next) {
+  try {
+    const summary = await appointmentsService.getRevenueSummary();
+    res.status(200).json({ success: true, data: summary });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function updateAppointmentPayment(req, res, next) {
+  try {
+    const appointment = await appointmentsService.updateAppointmentPayment(req.params.id, req.body, req);
+    res.status(200).json({ success: true, data: appointment });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function deleteAppointment(req, res, next) {
+  try {
+    await appointmentsService.deleteAppointment(req.params.id, req);
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+}

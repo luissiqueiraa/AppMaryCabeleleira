@@ -5,10 +5,15 @@ import { clientNavItems } from "../data/sidebarNav";
 
 export default function Sidebar({ onLogout, navItems = clientNavItems, isAdmin = false, canSeeAdmin = false }) {
   return (
-    <aside className="hidden h-screen w-64 flex-col border-r border-gray-200 bg-white lg:flex">
-      <div className="flex items-center gap-2 border-b border-gray-100 p-5">
-        <img src="/Mary_Cabelereira.png" alt="Logo" className="h-12 w-13" />
-        <p className="font-display text-md font-semibold text-gray-900 italic">MaryCabeleleira</p>
+    // A partir de 768px (tablet) já cabe uma sidebar fixa: mais estreita no
+    // tablet e na largura cheia no desktop, em vez de saltar direto do menu
+    // hambúrguer para a barra de 256px.
+    <aside className="hidden h-screen w-56 flex-col border-r border-gray-200 bg-white md:flex lg:w-64">
+      <div className="flex items-center gap-2 border-b border-gray-100 p-4 lg:p-5">
+        <img src="/Mary_Cabelereira.png" alt="Logo" className="h-10 w-10 lg:h-12 lg:w-13" />
+        <p className="font-display text-sm font-semibold text-gray-900 italic lg:text-md">
+          MaryCabeleleira
+        </p>
       </div>
 
       <SidebarNavList items={navItems} className="flex-1 space-y-1 overflow-y-auto p-3" />

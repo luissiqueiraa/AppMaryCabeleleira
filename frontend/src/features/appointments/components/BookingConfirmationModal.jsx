@@ -1,6 +1,6 @@
 import { FiX, FiClock, FiUsers } from "react-icons/fi";
-import Switch from "../../../shared/components/Switch";
 import Avatar from "../../../shared/components/Avatar";
+import PaymentMethodPicker from "./PaymentMethodPicker";
 
 const MONTH_ABBR = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
 
@@ -17,14 +17,17 @@ function addMinutes(time, minutes) {
 }
 
 export default function BookingConfirmationModal({
-  service,
+  services = [],
+  totalDuration = 0,
+  totalPrice = 0,
   professional,
   professionalName,
   date,
   dateLabel,
   time,
-  payOnSite,
-  onTogglePayOnSite,
+  paymentMethod,
+  onPaymentMethodChange,
+  onlinePaymentsEnabled,
   notes,
   onNotesChange,
   isLoading,
@@ -36,7 +39,7 @@ export default function BookingConfirmationModal({
   const dateObj = date ? new Date(`${date}T00:00:00`) : null;
   const day = dateObj ? dateObj.getDate() : null;
   const monthAbbr = dateObj ? MONTH_ABBR[dateObj.getMonth()] : null;
-  const endTime = service && time ? addMinutes(time, service.duration) : null;
+  const endTime = totalDuration && time ? addMinutes(time, totalDuration) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end lg:hidden">
@@ -78,13 +81,17 @@ export default function BookingConfirmationModal({
               onClick={onEditService}
               className="rounded-lg bg-pink-50 px-3 py-1.5 text-xs font-semibold text-pink-600 hover:bg-pink-100"
             >
-              Alterar serviço
+              Alterar serviços
             </button>
           </div>
 
           <div className="mt-2 flex items-center gap-4 rounded-lg border border-gray-200 p-4">
             <div className="min-w-0 flex-1">
-              <p className="font-display text-base font-semibold text-gray-900">{service?.name}</p>
+              {services.map((service) => (
+                <p key={service.id} className="font-display text-base font-semibold text-gray-900">
+                  {service.name}
+                </p>
+              ))}
 
               <div className="mt-2 flex items-center gap-2">
                 {professional ? (
@@ -100,15 +107,15 @@ export default function BookingConfirmationModal({
                 <p className="text-sm text-gray-600">{professionalName}</p>
               </div>
 
-              <p className="mt-3 text-xs text-gray-400">A partir de:</p>
-              <p className="text-lg font-semibold text-emerald-600">
-                R$ {formatPrice(service ? service.price : 0)}
+              <p className="mt-3 text-xs text-gray-400">
+                {services.length > 1 ? "Total a partir de:" : "A partir de:"}
               </p>
+              <p className="text-lg font-semibold text-emerald-600">R$ {formatPrice(totalPrice)}</p>
 
               {time && endTime && (
                 <p className="mt-2 flex items-center gap-1.5 text-sm text-gray-600">
                   <FiClock aria-hidden="true" />
-                  {time} - {endTime} ({service.duration} min)
+                  {time} - {endTime} ({totalDuration} min)
                 </p>
               )}
             </div>
@@ -121,16 +128,13 @@ export default function BookingConfirmationModal({
             )}
           </div>
 
-          <label className="mt-4 flex items-center justify-between gap-3 rounded-lg border border-pink-200 bg-pink-50 p-4">
-            <span className="text-sm font-medium text-pink-700">
-              Quero pagar na hora (após o atendimento)
-            </span>
-            <Switch
-              checked={payOnSite}
-              onChange={onTogglePayOnSite}
-              label="Quero pagar na hora (após o atendimento)"
+          <div className="mt-5">
+            <PaymentMethodPicker
+              value={paymentMethod}
+              onChange={onPaymentMethodChange}
+              onlinePaymentsEnabled={onlinePaymentsEnabled}
             />
-          </label>
+          </div>
 
           <div className="mt-4">
             <label htmlFor="booking-notes" className="text-sm font-medium text-gray-700">
@@ -152,7 +156,13 @@ export default function BookingConfirmationModal({
             disabled={!isComplete || isLoading}
             className="mt-4 w-full rounded-lg bg-pink-600 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {isLoading ? "Confirmando..." : "Confirmar agendamento"}
+            {isLoading
+              ? "Confirmando..."
+              : paymentMethod === "pix"
+                ? "Pagar com pix"
+                : paymentMethod === "card"
+                  ? "Pagar com cartão"
+                  : "Confirmar agendamento"}
           </button>
         </div>
       </div>

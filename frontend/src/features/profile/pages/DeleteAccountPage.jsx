@@ -33,7 +33,7 @@ export default function DeleteAccountPage() {
         Voltar ao perfil
       </Link>
 
-      <div className="mt-4 rounded-lg border border-red-200 bg-white p-6 shadow-sm">
+      <div className="mt-4 rounded-lg border border-red-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
         <div className="flex items-start gap-3">
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
             <FiAlertTriangle aria-hidden="true" />

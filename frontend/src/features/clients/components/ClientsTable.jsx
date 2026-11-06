@@ -54,7 +54,7 @@ export default function ClientsTable() {
   const filteredClients = filter === "all" ? clients : clients.filter((client) => client.segment === filter);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-lg font-semibold text-gray-900">Todas as clientes</h2>
         <AutocompleteFilter
@@ -126,11 +126,14 @@ export default function ClientsTable() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
+                  {/* Visitas e gasto total são as colunas mais dispensáveis
+                      para bater o olho na lista: entram só a partir de xl,
+                      senão a tabela não cabe em 1024px e fica cortada. */}
                   <th className="pb-3 font-semibold">Cliente</th>
                   <th className="pb-3 font-semibold">Contato</th>
                   <th className="pb-3 font-semibold">Telefone</th>
-                  <th className="pb-3 font-semibold">Visitas</th>
-                  <th className="pb-3 font-semibold">Gasto total</th>
+                  <th className="hidden pb-3 font-semibold xl:table-cell">Visitas</th>
+                  <th className="hidden pb-3 font-semibold xl:table-cell">Gasto total</th>
                   <th className="pb-3 font-semibold">Última</th>
                   <th className="pb-3" />
                 </tr>
@@ -146,13 +149,20 @@ export default function ClientsTable() {
                         </div>
                       </td>
                       <td className="py-4 pr-4 align-middle">
-                        <p className="text-gray-600">{client.email}</p>
+                        {/* Um email muito longo empurrava as colunas seguintes
+                            para fora da tela em 1024px; o title mantém o valor
+                            completo acessível ao passar o mouse. */}
+                        <p className="max-w-[200px] truncate text-gray-600 xl:max-w-none" title={client.email}>
+                          {client.email}
+                        </p>
                       </td>
                       <td className="py-4 pr-4 align-middle whitespace-nowrap text-gray-600">
                         {client.phone ? maskBrazilianPhone(client.phone) : "Não informado"}
                       </td>
-                      <td className="py-4 pr-4 align-middle text-gray-600">{client.visits}</td>
-                      <td className="py-4 pr-4 align-middle font-semibold text-gray-900 whitespace-nowrap">
+                      <td className="hidden py-4 pr-4 align-middle text-gray-600 xl:table-cell">
+                        {client.visits}
+                      </td>
+                      <td className="hidden py-4 pr-4 align-middle font-semibold text-gray-900 whitespace-nowrap xl:table-cell">
                         {formatBRL(client.spent)}
                       </td>
                       <td className="py-4 pr-4 align-middle text-gray-500 whitespace-nowrap">

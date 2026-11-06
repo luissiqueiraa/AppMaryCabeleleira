@@ -1,92 +1,18 @@
-import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import DateTimeSection from "../components/DateTimeSection";
-import { getAppointment, rescheduleAppointment, getAvailability } from "../../dashboard/services/appointmentService";
-import { getSettings } from "../../../shared/services/settingsService";
-import { generateDaySlots, computeUnavailableTimes, findDayHours } from "../utils/availability";
-import { toLocalIsoDate } from "../../../shared/utils/formatDate";
-import { useToast } from "../../../shared/contexts/useToast";
-import { getErrorMessage } from "../../../shared/utils/errorMessage";
-
-const NON_RESCHEDULABLE_STATUSES = ["completed", "cancelled"];
+import { useRescheduleFlow } from "../hooks/useRescheduleFlow";
+import { formatServiceNames } from "../../../shared/utils/formatServices";
 
 export default function RescheduleAppointmentPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const toast = useToast();
+  const flow = useRescheduleFlow(id, { onSuccess: () => navigate(`/appointments/${id}`) });
 
-  const [appointment, setAppointment] = useState(null);
-  const [hours, setHours] = useState([]);
-  const [loadStatus, setLoadStatus] = useState("loading");
-  const [date, setDate] = useState(null);
-  const [time, setTime] = useState(null);
-  const [availabilityResult, setAvailabilityResult] = useState({ key: null, unavailableTimes: new Set() });
-  const [submitStatus, setSubmitStatus] = useState("idle");
-
-  const slots = generateDaySlots(findDayHours(hours, date));
-
-  useEffect(() => {
-    Promise.all([getAppointment(id), getSettings()])
-      .then(([appointmentRes, settingsRes]) => {
-        const data = appointmentRes.data;
-        setAppointment(data);
-        setHours(settingsRes.data.hours);
-        const scheduled = new Date(data.scheduledAt);
-        setDate(toLocalIsoDate(scheduled));
-        setTime(scheduled.toTimeString().slice(0, 5));
-        setLoadStatus("success");
-      })
-      .catch(() => setLoadStatus("error"));
-  }, [id]);
-
-  const hasEmployee = Boolean(appointment && date && appointment.employee);
-  const availabilityKey = hasEmployee ? `${appointment.employee.id}|${date}` : null;
-
-  useEffect(() => {
-    if (!availabilityKey) return;
-    let isMounted = true;
-    getAvailability({ employeeId: appointment.employee.id, date, excludeId: appointment.id })
-      .then(({ data }) => {
-        if (!isMounted) return;
-        setAvailabilityResult({
-          key: availabilityKey,
-          unavailableTimes: computeUnavailableTimes({ date, slots, bookedAppointments: data, durationMinutes: appointment.durationMinutes }),
-        });
-      })
-      .catch(() => {
-        if (isMounted) setAvailabilityResult({ key: availabilityKey, unavailableTimes: new Set() });
-      });
-    return () => {
-      isMounted = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availabilityKey]);
-
-  const isLoadingAvailability = Boolean(availabilityKey) && availabilityResult.key !== availabilityKey;
-  const unavailableTimes = !availabilityKey
-    ? computeUnavailableTimes({ date, slots, bookedAppointments: [], durationMinutes: appointment?.durationMinutes })
-    : availabilityResult.key === availabilityKey
-      ? availabilityResult.unavailableTimes
-      : new Set();
-
-  async function handleSubmit() {
-    setSubmitStatus("loading");
-    try {
-      const scheduledAt = new Date(`${date}T${time}:00`).toISOString();
-      await rescheduleAppointment(id, { scheduledAt });
-      toast.success("Agendamento remarcado com sucesso.");
-      navigate(`/appointments/${id}`);
-    } catch (err) {
-      setSubmitStatus("error");
-      toast.error(getErrorMessage(err, "Não foi possível remarcar agora. Tente novamente em instantes."));
-    }
-  }
-
-  if (loadStatus === "loading") {
+  if (flow.loadStatus === "loading") {
     return <p className="text-sm text-gray-500">Carregando...</p>;
   }
 
-  if (loadStatus === "error" || !appointment) {
+  if (flow.loadStatus === "error" || !flow.appointment) {
     return (
       <div className="mx-auto max-w-xl rounded-lg border border-dashed border-gray-200 bg-white p-8 text-center">
         <p className="text-sm text-gray-500">Agendamento não encontrado.</p>
@@ -97,7 +23,7 @@ export default function RescheduleAppointmentPage() {
     );
   }
 
-  if (NON_RESCHEDULABLE_STATUSES.includes(appointment.status)) {
+  if (!flow.canReschedule) {
     return (
       <div className="mx-auto max-w-xl rounded-lg border border-dashed border-gray-200 bg-white p-8 text-center">
         <p className="text-sm text-gray-500">Este agendamento não pode mais ser remarcado.</p>
@@ -112,43 +38,47 @@ export default function RescheduleAppointmentPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="mx-auto max-w-xl space-y-6 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
       <div>
-        <h2 className="font-display text-xl font-semibold text-gray-900">Remarcar {appointment.service.name}</h2>
+        <h2 className="font-display text-xl font-semibold text-gray-900">
+          Remarcar {formatServiceNames(flow.appointment.services)}
+        </h2>
         <p className="mt-1 text-sm text-gray-500">
-          com {appointment.employee?.fullName ?? "Sem preferência"}
+          com {flow.appointment.employee?.fullName ?? "Sem preferência"}
         </p>
       </div>
 
       <DateTimeSection
-        selectedDate={date}
-        selectedTime={time}
-        onSelectDate={(newDate) => {
-          setDate(newDate);
-          setTime(null);
-        }}
-        onSelectTime={setTime}
-        hours={hours}
-        slots={slots}
-        unavailableTimes={unavailableTimes}
-        isLoadingAvailability={isLoadingAvailability}
+        selectedDate={flow.date}
+        selectedTime={flow.time}
+        onSelectDate={flow.selectDate}
+        onSelectTime={flow.selectTime}
+        hours={flow.hours}
+        slots={flow.slots}
+        unavailableTimes={flow.unavailableTimes}
+        isLoadingAvailability={flow.isLoadingAvailability}
+        totalDuration={flow.durationMinutes}
+        latestStart={flow.latestStart}
       />
 
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!date || !time || submitStatus === "loading"}
-          className="flex-1 rounded-lg bg-pink-600 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {submitStatus === "loading" ? "Remarcando..." : "Confirmar nova data"}
-        </button>
+      {/* Empilhados no celular: lado a lado, "Confirmar nova data" quebrava em
+          duas linhas e ficava com metade da altura do outro botão. A ação
+          principal vem primeiro na ordem visual em ambos os casos. */}
+      <div className="flex flex-col-reverse gap-3 sm:flex-row">
         <Link
           to={`/appointments/${id}`}
           className="flex-1 rounded-lg border border-gray-200 py-3 text-center text-sm font-semibold text-gray-700 hover:bg-gray-50"
         >
-          Cancelar
+          Voltar
         </Link>
+        <button
+          type="button"
+          onClick={flow.submit}
+          disabled={!flow.canSubmit}
+          className="flex-1 rounded-lg bg-pink-600 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {flow.isSubmitting ? "Remarcando..." : "Confirmar nova data"}
+        </button>
       </div>
     </div>
   );

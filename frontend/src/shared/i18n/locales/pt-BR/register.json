@@ -26,14 +26,7 @@
       }
     }
   },
-  "passwordHint": "Mínimo de 7 caracteres.",
-  "passwordStrength": {
-    "label": "Força da senha",
-    "weak": "Fraca",
-    "fair": "Razoável",
-    "good": "Boa",
-    "strong": "Forte"
-  },
+  "passwordHint": "Mínimo de 6 caracteres.",
   "terms": {
     "prefix": "Aceito os",
     "serviceLink": "Termos de Uso",
@@ -53,7 +46,7 @@
     "phoneRequired": "Informe seu telefone.",
     "phoneInvalid": "Informe um telefone válido.",
     "passwordRequired": "Informe uma senha.",
-    "passwordWeak": "A senha deve ter mais de 6 caracteres.",
+    "passwordWeak": "A senha deve ter no mínimo 6 caracteres.",
     "confirmPasswordRequired": "Confirme sua senha.",
     "confirmPasswordMismatch": "As senhas não coincidem.",
     "termsRequired": "Você precisa aceitar os Termos de Uso e a Política de Privacidade.",

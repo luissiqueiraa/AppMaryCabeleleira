@@ -11,6 +11,10 @@ export function findServiceById(id) {
   return prisma.service.findFirst({ where: { id, deletedAt: null } });
 }
 
+export function findServicesByIds(ids) {
+  return prisma.service.findMany({ where: { id: { in: ids }, deletedAt: null } });
+}
+
 export function createService({ name, description, category, duration, price }) {
   return prisma.service.create({ data: { name, description, category, duration, price } });
 }

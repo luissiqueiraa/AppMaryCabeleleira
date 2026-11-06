@@ -48,7 +48,7 @@ export default function ChangePasswordPage() {
 
       <form
         onSubmit={handleSubmit}
-        className="mt-4 space-y-4 rounded-lg border border-gray-200 bg-white p-6 shadow-sm"
+        className="mt-4 space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6"
       >
         <h2 className="font-display text-lg font-semibold text-gray-900">Alterar senha</h2>
 

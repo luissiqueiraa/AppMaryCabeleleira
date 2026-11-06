@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../../shared/contexts/useAuth";
 import { ROLES } from "../../../shared/constants/roles";
 
@@ -23,6 +23,7 @@ function validate(values) {
 
 export function useLoginForm() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login } = useAuth();
   const [values, setValues] = useState({ email: "", password: "", rememberMe: false });
   const [touched, setTouched] = useState({});
@@ -63,7 +64,11 @@ export function useLoginForm() {
       });
       setStatus("success");
       const isStaff = [ROLES.OWNER, ROLES.ADMIN, ROLES.EMPLOYEE].includes(user.role?.name);
-      navigate(isStaff ? "/admin" : "/dashboard");
+      // A home manda a cliente para o login com "next" quando ela clicou em
+      // agendar: ao entrar, ela continua de onde parou. Equipe vai sempre para
+      // o painel — não agenda para si mesma.
+      const next = searchParams.get("next");
+      navigate(isStaff ? "/admin" : (next ?? "/dashboard"));
     } catch {
       setStatus("error");
       setFormError("Não foi possível entrar. Verifique seus dados e tente novamente.");

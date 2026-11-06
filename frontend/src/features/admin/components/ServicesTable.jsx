@@ -63,7 +63,7 @@ export default function ServicesTable() {
     filter === "all" ? services : services.filter((service) => service.category === filter);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-display text-lg font-semibold text-gray-900">Todos os serviços</h2>
         <div className="flex items-center gap-3">

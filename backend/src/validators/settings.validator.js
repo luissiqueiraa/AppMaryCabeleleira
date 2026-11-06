@@ -17,3 +17,12 @@ export const updateSettingsSchema = {
     hours: z.array(businessHourSchema).length(7).optional(),
   }),
 };
+
+export const resetSystemSchema = {
+  body: z.object({
+    // A frase em si é conferida no service (ele é dono da regra); aqui só
+    // garantimos que veio alguma coisa.
+    confirmation: z.string().min(1, "Digite a frase de confirmação"),
+    password: z.string().min(1).optional(),
+  }),
+};

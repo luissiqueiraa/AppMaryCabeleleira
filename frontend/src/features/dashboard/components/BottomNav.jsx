@@ -1,11 +1,13 @@
 import { NavLink } from "react-router-dom";
 import { bottomNav } from "../data/sidebarNav";
 
+// Só existe enquanto não há sidebar: a partir de md a navegação passa a ser a
+// barra lateral fixa, e manter as duas seria navegação duplicada.
 export default function BottomNav({ items = bottomNav }) {
   return (
     <nav
       aria-label="Navegação inferior"
-      className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-100 bg-white/95 backdrop-blur-sm lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-100 bg-white/95 backdrop-blur-sm md:hidden"
     >
       <ul className="flex items-center justify-between px-1 py-2">
         {items.map((item) => (

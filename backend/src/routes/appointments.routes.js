@@ -2,7 +2,7 @@ import { Router } from "express";
 import * as appointmentsController from "../controllers/appointments.controller.js";
 import * as appointmentsService from "../services/appointments.service.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
-import { authorize } from "../middlewares/authorize.middleware.js";
+import { authorize, authorizeRoles } from "../middlewares/authorize.middleware.js";
 import { authorizeOwnership } from "../middlewares/ownership.middleware.js";
 import { validateRequest } from "../middlewares/validateRequest.middleware.js";
 import {
@@ -12,6 +12,8 @@ import {
   rescheduleAppointmentSchema,
   cancelAppointmentSchema,
   updateAppointmentStatusSchema,
+  updateAppointmentPaymentSchema,
+  deleteAppointmentSchema,
   availabilitySchema,
 } from "../validators/appointments.validator.js";
 
@@ -24,6 +26,10 @@ router.get("/", validateRequest(listAppointmentsSchema), appointmentsController.
 
 // Antes de "/:id" — senão "availability" seria interpretado como um id.
 router.get("/availability", validateRequest(availabilitySchema), appointmentsController.getAvailability);
+
+// Caixa do salão, para os indicadores do painel. Mesma permission do painel
+// (view_dashboard): quem já vê o painel hoje continua vendo o valor.
+router.get("/revenue", authorize("view_dashboard"), appointmentsController.getRevenueSummary);
 
 router.get(
   "/:id",
@@ -56,6 +62,25 @@ router.patch(
   authorize("manage_appointments"),
   validateRequest(updateAppointmentStatusSchema),
   appointmentsController.updateAppointmentStatus
+);
+
+// Baixa do dinheiro recebido no salão: decisão da equipe, separada de concluir
+// o atendimento.
+router.patch(
+  "/:id/payment",
+  authorize("manage_appointments"),
+  validateRequest(updateAppointmentPaymentSchema),
+  appointmentsController.updateAppointmentPayment
+);
+
+// Excluir é mais pesado que cancelar: tira o agendamento das listas e do
+// caixa. Fica com admin e proprietária — funcionária cancela, não apaga
+// histórico.
+router.delete(
+  "/:id",
+  authorizeRoles("admin"),
+  validateRequest(deleteAppointmentSchema),
+  appointmentsController.deleteAppointment
 );
 
 export default router;

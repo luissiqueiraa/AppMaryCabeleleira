@@ -14,6 +14,7 @@ const NotFoundPage = lazy(() => import("../../features/notFound/pages/NotFoundPa
 const LoginPage = lazy(() => import("../../features/auth/pages/LoginPage"));
 const RegisterPage = lazy(() => import("../../features/auth/pages/RegisterPage"));
 const ForgotPasswordPage = lazy(() => import("../../features/auth/pages/ForgotPasswordPage"));
+const CompleteProfilePage = lazy(() => import("../../features/auth/pages/CompleteProfilePage"));
 const PrivacyPolicyPage = lazy(() => import("../../features/legal/pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("../../features/legal/pages/TermsOfServicePage"));
 const BookingPage = lazy(() => import("../../features/booking/pages/BookingPage"));
@@ -23,10 +24,10 @@ const AppointmentsPage = lazy(() => import("../../features/appointments/pages/Ap
 const AppointmentDetailPage = lazy(() => import("../../features/appointments/pages/AppointmentDetailPage"));
 const NewAppointmentPage = lazy(() => import("../../features/appointments/pages/NewAppointmentPage"));
 const RescheduleAppointmentPage = lazy(() => import("../../features/appointments/pages/RescheduleAppointmentPage"));
+const PaymentReturnPage = lazy(() => import("../../features/appointments/pages/PaymentReturnPage"));
 const ServiceHistoryPage = lazy(() => import("../../features/serviceHistory/pages/ServiceHistoryPage"));
 const ProfilePage = lazy(() => import("../../features/profile/pages/ProfilePage"));
 const PersonalInfoPage = lazy(() => import("../../features/profile/pages/PersonalInfoPage"));
-const PreferencesPage = lazy(() => import("../../features/profile/pages/PreferencesPage"));
 const ChangePasswordPage = lazy(() => import("../../features/profile/pages/ChangePasswordPage"));
 const PhonePage = lazy(() => import("../../features/profile/pages/PhonePage"));
 const DeleteAccountPage = lazy(() => import("../../features/profile/pages/DeleteAccountPage"));
@@ -65,7 +66,6 @@ export default function AppRoutes() {
             <Route path="/service-history" element={<ServiceHistoryPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/personal-info" element={<PersonalInfoPage />} />
-            <Route path="/profile/preferences" element={<PreferencesPage />} />
             <Route path="/profile/change-password" element={<ChangePasswordPage />} />
             <Route path="/profile/phone" element={<PhonePage />} />
             <Route path="/profile/delete-account" element={<DeleteAccountPage />} />
@@ -73,8 +73,11 @@ export default function AppRoutes() {
           </Route>
 
           <Route element={<FocusLayout />}>
+            <Route path="/complete-profile" element={<CompleteProfilePage />} />
             <Route path="/appointments/new" element={<NewAppointmentPage />} />
             <Route path="/appointments/:id/reschedule" element={<RescheduleAppointmentPage />} />
+            {/* Volta do checkout de cartão do Mercado Pago (back_urls). */}
+            <Route path="/payments/:id" element={<PaymentReturnPage />} />
           </Route>
         </Route>
 

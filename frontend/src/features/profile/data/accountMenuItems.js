@@ -1,4 +1,4 @@
-import { FiUser, FiLock, FiPhone, FiHeart, FiTrash2, FiLogOut } from "react-icons/fi";
+import { FiUser, FiLock, FiPhone, FiTrash2, FiLogOut } from "react-icons/fi";
 
 export function getAccountMenuItems(onLogout) {
   return [
@@ -19,12 +19,6 @@ export function getAccountMenuItems(onLogout) {
       description: "Altere seu número",
       icon: FiPhone,
       to: "/profile/phone",
-    },
-    {
-      label: "Preferências",
-      description: "Ajuste como falamos com você",
-      icon: FiHeart,
-      to: "/profile/preferences",
     },
     {
       label: "Excluir conta",

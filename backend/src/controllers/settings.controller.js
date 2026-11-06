@@ -26,3 +26,12 @@ export async function updateLogo(req, res, next) {
     next(error);
   }
 }
+
+export async function resetSystem(req, res, next) {
+  try {
+    const result = await settingsService.resetSystem(req.body, req);
+    res.status(200).json({ success: true, data: result });
+  } catch (error) {
+    next(error);
+  }
+}

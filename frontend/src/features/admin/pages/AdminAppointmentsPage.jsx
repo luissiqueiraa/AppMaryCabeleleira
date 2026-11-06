@@ -5,10 +5,11 @@ import AppointmentDetailModal from "../components/AppointmentDetailModal";
 import ConfirmationModal from "../../../shared/components/ConfirmationModal";
 import { listEmployees } from "../../employees/services/employeeService";
 import { listAppointments, cancelAppointment } from "../../dashboard/services/appointmentService";
-import { updateAppointmentStatus } from "../services/adminAppointmentService";
+import { updateAppointmentStatus, updateAppointmentPayment } from "../services/adminAppointmentService";
 import { getSettings } from "../../../shared/services/settingsService";
 import { hourRangeForDay, findDayHours } from "../../appointments/utils/availability";
 import { formatFullDate, toLocalIsoDate as isoDate } from "../../../shared/utils/formatDate";
+import { formatServiceNames } from "../../../shared/utils/formatServices";
 import { useToast } from "../../../shared/contexts/useToast";
 import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
@@ -67,7 +68,7 @@ export default function AdminAppointmentsPage() {
               return {
                 id: item.id,
                 employeeId: item.employee.id,
-                service: item.service.name,
+                service: formatServiceNames(item.services),
                 client: item.client.fullName,
                 phone: item.client.phoneNumber,
                 professional: item.employee.fullName,
@@ -103,6 +104,22 @@ export default function AdminAppointmentsPage() {
       setRefreshToken((n) => n + 1);
     } catch (err) {
       toast.error(getErrorMessage(err, "Não foi possível atualizar agora. Tente novamente em instantes."));
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
+  // Baixa do dinheiro recebido no salão — decisão separada de concluir o
+  // atendimento, por isso um handler próprio.
+  async function handlePaymentChange(id, paymentStatus) {
+    setIsUpdating(true);
+    try {
+      await updateAppointmentPayment(id, paymentStatus);
+      toast.success("Pagamento confirmado.");
+      setDetailTarget(null);
+      setRefreshToken((n) => n + 1);
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Não foi possível atualizar o pagamento agora."));
     } finally {
       setIsUpdating(false);
     }
@@ -164,6 +181,7 @@ export default function AdminAppointmentsPage() {
         onClose={() => setDetailTarget(null)}
         onStatusChange={handleStatusChange}
         onRequestCancel={setCancelTarget}
+        onPaymentChange={handlePaymentChange}
       />
 
       <ConfirmationModal

@@ -36,7 +36,6 @@ const PAGE_TITLES = {
     mobileAction: SETTINGS_LINK,
   },
   "/profile/personal-info": { eyebrow: "Conta e preferências", title: "Meu perfil", mobileTitle: "Meu perfil" },
-  "/profile/preferences": { eyebrow: "Conta e preferências", title: "Preferências", mobileTitle: "Preferências" },
   "/profile/change-password": { eyebrow: "Conta e preferências", title: "Alterar senha", mobileTitle: "Alterar senha" },
   "/profile/phone": { eyebrow: "Conta e preferências", title: "Telefone", mobileTitle: "Telefone" },
   "/profile/delete-account": { eyebrow: "Conta e preferências", title: "Excluir conta", mobileTitle: "Excluir conta" },
@@ -125,7 +124,9 @@ export default function DashboardLayout() {
           onOpenMenu={() => setDrawerOpen(true)}
           onLogout={handleLogout}
         />
-        <main className="flex-1 overflow-y-auto px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:pb-8">
+        {/* pb-24 abre espaço para a BottomNav fixa; a partir de md ela some e
+            o respiro extra deixa de ser necessário. */}
+        <main className="flex-1 overflow-y-auto px-4 py-5 pb-24 sm:px-6 md:py-6 md:pb-6 lg:px-8 lg:pb-8">
           <Outlet />
         </main>
         <BottomNav

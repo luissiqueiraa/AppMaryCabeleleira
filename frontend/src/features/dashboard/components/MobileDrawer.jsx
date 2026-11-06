@@ -14,7 +14,7 @@ export default function MobileDrawer({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-40 lg:hidden">
+    <div className="fixed inset-0 z-40 md:hidden">
       <button
         type="button"
         aria-label="Fechar menu"

@@ -45,3 +45,17 @@ export function authorizeAny(...permissions) {
     next();
   };
 }
+
+// Checagem por papel, para o que não é questão de permission e sim de cargo —
+// reset de fábrica, por exemplo. owner passa sempre, como nas outras variantes.
+export function authorizeRoles(...roleNames) {
+  return (req, res, next) => {
+    if (!req.user) {
+      return next(new AppError("Authentication required", 401));
+    }
+    if (req.user.role !== "owner" && !roleNames.includes(req.user.role)) {
+      return next(new AppError("Insufficient permissions", 403));
+    }
+    next();
+  };
+}

@@ -1,7 +1,10 @@
+import { Link } from "react-router-dom";
 import { FiInstagram, FiFacebook, FiMapPin, FiPhone } from "react-icons/fi";
 import Container from "../ui/Container";
 
-export default function Footer() {
+// Contato vem das configurações do salão: um telefone errado no rodapé é
+// cliente perdido, e ninguém se lembra de atualizar em dois lugares.
+export default function Footer({ salon }) {
   return (
     <footer className="border-t border-border bg-bg">
       <Container className="grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
@@ -66,11 +69,6 @@ export default function Footer() {
                 Equipe
               </a>
             </li>
-            <li>
-              <a href="#depoimentos" className="text-sm text-text-muted hover:text-text">
-                Depoimentos
-              </a>
-            </li>
           </ul>
         </nav>
 
@@ -79,11 +77,17 @@ export default function Footer() {
           <ul className="mt-4 space-y-3 text-sm text-text-muted">
             <li className="flex items-start gap-2">
               <FiMapPin className="mt-0.5 shrink-0" aria-hidden="true" />
-              R. Caetano Pinto, 415 — São Paulo, SP
+              {salon?.address ?? "Endereço sob consulta"}
             </li>
             <li className="flex items-center gap-2">
               <FiPhone className="shrink-0" aria-hidden="true" />
-              (11) 5566-3366
+              {salon?.phone ? (
+                <a href={`tel:${salon.phone.replace(/[^0-9]/g, "")}`} className="hover:text-text">
+                  {salon.phone}
+                </a>
+              ) : (
+                "Telefone em breve"
+              )}
             </li>
           </ul>
         </div>
@@ -93,8 +97,13 @@ export default function Footer() {
         <Container className="flex flex-col items-center justify-between gap-2 text-xs text-text-muted sm:flex-row">
           <p>© {new Date().getFullYear()} MaryCabeleleira. Todos os direitos reservados.</p>
           <div className="flex gap-4">
-            <a href="#" className="hover:text-text">Política de Privacidade</a>
-            <a href="#" className="hover:text-text">Termos de Uso</a>
+            {/* Link de rota, não âncora: são páginas próprias do app. */}
+            <Link to="/privacy-policy" className="hover:text-text">
+              Política de Privacidade
+            </Link>
+            <Link to="/terms-of-service" className="hover:text-text">
+              Termos de Uso
+            </Link>
           </div>
         </Container>
       </div>

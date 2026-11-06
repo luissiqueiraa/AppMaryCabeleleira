@@ -19,7 +19,7 @@ export default function SalonIdentityCard({ values, onChange, onLogoChange, isUp
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
       <h3 className="font-display text-lg font-semibold text-gray-900">Identidade do salão</h3>
 
       <div className="mt-5 grid gap-6 sm:grid-cols-[96px_1fr]">

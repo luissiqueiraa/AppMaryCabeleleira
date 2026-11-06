@@ -56,6 +56,7 @@ model User {
   auditLogs           AuditLog[]
   employee            Employee?
   clientAppointments  Appointment[]  @relation("ClientAppointments")
+  payments            Payment[]
   notifications       Notification[]
 
   @@index([roleId])
@@ -152,7 +153,7 @@ model Service {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  appointments Appointment[]
+  appointments AppointmentService[]
 
   @@index([active])
   @@index([category])
@@ -188,34 +189,128 @@ model Appointment {
   id          String            @id @default(uuid())
   clientId    String
   employeeId  String?
-  serviceId   String
   // Agendamento já nasce confirmado: sem etapa de aprovação manual do
   // admin — ninguém agenda um corte sem saber se vai comparecer.
   status      AppointmentStatus @default(confirmed)
   scheduledAt DateTime
 
-  // Snapshot do Service no momento do agendamento: preço/duração podem mudar
-  // depois e não devem alterar retroativamente um agendamento já feito
-  // (histórico financeiro e o conflict-check precisam do valor "congelado").
+  // Totais dos serviços escolhidos, congelados no momento do agendamento:
+  // preço/duração do catálogo podem mudar depois e não devem alterar
+  // retroativamente um agendamento já feito (histórico financeiro e o
+  // conflict-check precisam do valor "congelado"). A quebra por serviço fica
+  // em AppointmentService.
   durationMinutes Int
   price           Decimal @db.Decimal(10, 2)
 
-  payOnSite Boolean @default(true)
-  notes     String?
+  // Como a cliente escolheu pagar. "on_site" paga no salão depois do serviço
+  // (nasce pending e a equipe confirma); pix/card só chegam a existir como
+  // agendamento depois do pagamento aprovado, então nascem paid.
+  paymentMethod PaymentMethod @default(on_site)
+  paymentStatus PaymentStatus @default(pending)
+
+  notes String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  client   User      @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
-  employee Employee? @relation(fields: [employeeId], references: [id], onDelete: SetNull)
-  service  Service   @relation(fields: [serviceId], references: [id])
+  client   User                 @relation("ClientAppointments", fields: [clientId], references: [id], onDelete: Cascade)
+  // Restrict, e não SetNull: um agendamento sem profissional não entra no
+  // conflict-check nem na constraint de sobreposição — viraria um horário
+  // fantasma. Excluir funcionária é soft delete (employees.repository), então
+  // isso só barra remoção manual no banco, que é justamente a intenção.
+  employee Employee?            @relation(fields: [employeeId], references: [id], onDelete: Restrict)
+  services AppointmentService[]
+  payment  Payment?
 
   @@index([clientId])
   @@index([employeeId, scheduledAt])
   @@index([status])
   @@index([deletedAt])
   @@map("appointments")
+}
+
+enum PaymentMethod {
+  pix
+  card
+  on_site
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  expired
+  refunded
+}
+
+// Cobrança online (pix/cartão). Existe ANTES do agendamento: a regra do salão
+// é reservar o horário só depois do pagamento aprovado, então aqui ficam os
+// dados do agendamento pretendido até a confirmação chegar do provedor.
+// "on_site" não passa por aqui — não há cobrança a fazer.
+model Payment {
+  id       String        @id @default(uuid())
+  clientId String
+  method   PaymentMethod
+  status   PaymentStatus @default(pending)
+  amount   Decimal       @db.Decimal(10, 2)
+
+  // Agendamento pretendido. O snapshot dos serviços (id, nome, preço, duração)
+  // fica em JSON porque ainda não existe Appointment para pendurar os itens —
+  // e é ele, não o catálogo, que vale na hora de criar: a cliente paga o que
+  // viu na tela, mesmo que o preço mude no meio do caminho.
+  employeeId      String
+  scheduledAt     DateTime
+  durationMinutes Int
+  services        Json
+  notes           String?
+
+  // Dados do provedor. providerPaymentId é a chave de idempotência contra
+  // webhook repetido (o Mercado Pago reenvia até receber 200).
+  provider          String  @default("mercadopago")
+  providerPaymentId String? @unique
+  checkoutUrl       String? // cartão: para onde a cliente é levada
+  pixQrCode         String? // pix: copia e cola
+  pixQrCodeBase64   String? // pix: imagem do QR
+  failureReason     String?
+
+  // Pix expira: passado isso a cobrança não vale mais e a cliente recomeça.
+  expiresAt DateTime
+  paidAt    DateTime?
+
+  appointmentId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  client      User         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+
+  @@index([clientId])
+  @@index([status])
+  @@map("payments")
+}
+
+// Uma cliente pode combinar vários procedimentos numa mesma ida ao salão
+// (ex: corte + escova). Cada item guarda o próprio snapshot de preço/duração,
+// para que o total do agendamento continue auditável item a item.
+model AppointmentService {
+  id              String  @id @default(uuid())
+  appointmentId   String
+  serviceId       String
+  durationMinutes Int
+  price           Decimal @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  service     Service     @relation(fields: [serviceId], references: [id])
+
+  // O mesmo serviço não se repete dentro de um agendamento: dois cortes na
+  // mesma sessão seriam dois agendamentos.
+  @@unique([appointmentId, serviceId])
+  @@index([serviceId])
+  @@map("appointmentServices")
 }
 
 model Notification {

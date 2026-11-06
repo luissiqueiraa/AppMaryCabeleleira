@@ -1,10 +1,10 @@
 import { Router } from "express";
 import * as settingsController from "../controllers/settings.controller.js";
 import { authenticate } from "../middlewares/auth.middleware.js";
-import { authorize } from "../middlewares/authorize.middleware.js";
+import { authorize, authorizeRoles } from "../middlewares/authorize.middleware.js";
 import { uploadLogo } from "../middlewares/upload.middleware.js";
 import { validateRequest } from "../middlewares/validateRequest.middleware.js";
-import { updateSettingsSchema } from "../validators/settings.validator.js";
+import { updateSettingsSchema, resetSystemSchema } from "../validators/settings.validator.js";
 
 const router = Router();
 router.use(authenticate);
@@ -19,5 +19,14 @@ router.patch(
   settingsController.updateSettings
 );
 router.patch("/logo", authorize("manage_settings"), uploadLogo, settingsController.updateLogo);
+
+// Zona de perigo: apaga os dados e restaura o padrão de fábrica. Liberado para
+// admin (e owner, que nunca é barrada) — não para funcionária ou cliente.
+router.post(
+  "/reset",
+  authorizeRoles("admin"),
+  validateRequest(resetSystemSchema),
+  settingsController.resetSystem
+);
 
 export default router;

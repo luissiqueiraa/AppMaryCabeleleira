@@ -1,5 +1,7 @@
 import { useState } from "react";
+import { FiTrash2, FiSlash, FiCalendar } from "react-icons/fi";
 import StatusBadge from "../../../shared/components/StatusBadge";
+import OverflowMenu from "../../../shared/components/OverflowMenu";
 import AutocompleteFilter from "../../../shared/components/AutocompleteFilter";
 import Avatar from "../../../shared/components/Avatar";
 import { avatarColorFor } from "../../../shared/utils/avatarColor";
@@ -9,19 +11,57 @@ const FILTERS = [
   { id: "confirmed", label: "Confirmados" },
 ];
 
+// Agendamento pendente (dado legado) precisa de uma saída na tela: confirmar
+// primeiro, concluir depois.
 const NEXT_ACTION = {
+  pending: { status: "confirmed", label: "Confirmar" },
   confirmed: { status: "completed", label: "Concluir" },
 };
 
-export default function UpcomingAppointmentsTable({ appointments, onStatusChange }) {
+export default function UpcomingAppointmentsTable({
+  appointments,
+  onStatusChange,
+  onRequestDelete,
+  onRequestCancel,
+  onRequestReschedule,
+}) {
   const [filter, setFilter] = useState("all");
+
+  // Cancelar é o caminho normal quando a cliente desmarca; excluir é para erro
+  // de lançamento e só aparece para quem pode. A página decide o que passa.
+  const rowMenu = (item) => {
+    const podeCancelar = onRequestCancel && ["pending", "confirmed"].includes(item.status);
+    const podeRemarcar = onRequestReschedule && ["pending", "confirmed"].includes(item.status);
+    const actions = [
+      ...(podeRemarcar
+        ? [{ label: "Alterar data e horário", icon: FiCalendar, onClick: () => onRequestReschedule(item) }]
+        : []),
+      ...(podeCancelar
+        ? [{ label: "Cancelar agendamento", icon: FiSlash, onClick: () => onRequestCancel(item) }]
+        : []),
+      ...(onRequestDelete
+        ? [{ label: "Excluir", icon: FiTrash2, onClick: () => onRequestDelete(item), danger: true }]
+        : []),
+    ];
+
+    if (actions.length === 0) return null;
+
+    return (
+      <OverflowMenu
+        ariaLabel={`Mais opções do agendamento de ${item.client}`}
+        actions={actions}
+      />
+    );
+  };
 
   const items = filter === "all" ? appointments : appointments.filter((item) => item.status === filter);
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-lg font-semibold text-gray-900">Próximos atendimentos</h2>
+    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-lg font-semibold whitespace-nowrap text-gray-900">
+          Próximos atendimentos
+        </h2>
         <AutocompleteFilter
           options={FILTERS}
           value={filter}
@@ -43,7 +83,7 @@ export default function UpcomingAppointmentsTable({ appointments, onStatusChange
               <li key={item.id} className="rounded-lg border border-gray-200 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-3">
-                    <Avatar name={item.client} size={36} />
+                    <Avatar name={item.client} avatarUrl={item.clientAvatarUrl} size={36} />
                     <div>
                       <p className="font-semibold text-gray-900">{item.client}</p>
                       <p className="text-xs text-gray-500">
@@ -51,7 +91,10 @@ export default function UpcomingAppointmentsTable({ appointments, onStatusChange
                       </p>
                     </div>
                   </div>
-                  <StatusBadge status={item.status} />
+                  <div className="flex items-center gap-1">
+                    <StatusBadge status={item.status} />
+                    {rowMenu(item)}
+                  </div>
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-sm">
@@ -89,11 +132,13 @@ export default function UpcomingAppointmentsTable({ appointments, onStatusChange
         <table className="w-full text-left text-sm">
           <thead>
             <tr className="text-xs font-semibold tracking-wide text-gray-400 uppercase">
+              {/* O valor é o dado menos urgente numa lista do que ainda vai
+                  acontecer — entra a partir de xl, onde há largura sobrando. */}
               <th className="pb-3 font-semibold">Horário</th>
               <th className="pb-3 font-semibold">Cliente</th>
               <th className="pb-3 font-semibold">Serviço</th>
               <th className="pb-3 font-semibold">Profissional</th>
-              <th className="pb-3 font-semibold">Valor</th>
+              <th className="hidden pb-3 font-semibold xl:table-cell">Valor</th>
               <th className="pb-3 font-semibold">Status</th>
               <th className="pb-3" />
             </tr>
@@ -108,7 +153,7 @@ export default function UpcomingAppointmentsTable({ appointments, onStatusChange
                     </td>
                     <td className="py-4 pr-4 align-middle">
                       <div className="flex items-center gap-3">
-                        <Avatar name={item.client} size={36} />
+                        <Avatar name={item.client} avatarUrl={item.clientAvatarUrl} size={36} />
                         <div>
                           <p className="font-semibold text-gray-900">{item.client}</p>
                         </div>
@@ -125,11 +170,14 @@ export default function UpcomingAppointmentsTable({ appointments, onStatusChange
                         {item.professional}
                       </div>
                     </td>
-                    <td className="py-4 pr-4 align-middle font-semibold text-gray-900">{item.price}</td>
+                    <td className="hidden py-4 pr-4 align-middle font-semibold text-gray-900 xl:table-cell">
+                      {item.price}
+                    </td>
                     <td className="py-4 pr-4 align-middle">
                       <StatusBadge status={item.status} />
                     </td>
-                    <td className="py-4 align-middle text-right">
+                    <td className="py-4 align-middle">
+                      <div className="flex items-center justify-end gap-1">
                       {action && (
                         <button
                           type="button"
@@ -139,6 +187,8 @@ export default function UpcomingAppointmentsTable({ appointments, onStatusChange
                           {action.label}
                         </button>
                       )}
+                      {rowMenu(item)}
+                      </div>
                     </td>
                   </tr>
                 );
