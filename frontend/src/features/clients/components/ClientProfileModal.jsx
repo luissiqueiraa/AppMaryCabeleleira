@@ -5,7 +5,7 @@ import Avatar from "../../../shared/components/Avatar";
 import { formatBRL } from "../../../shared/utils/formatCurrency";
 import { formatRelativeDate } from "../../../shared/utils/formatDate";
 
-const SEGMENT_LABEL = { recent: "Recente", inactive: "Inativa" };
+const SEGMENT_LABEL = { upcoming: "Com horário marcado", recent: "Recente", inactive: "Inativa" };
 
 function Stat({ label, value }) {
   return (

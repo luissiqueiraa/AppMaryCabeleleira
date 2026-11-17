@@ -86,6 +86,18 @@ export function sumReceivedRevenue({ from, to } = {}) {
   return sumPrice({ status: "completed", paymentStatus: "paid", ...dateRange({ from, to }) });
 }
 
+// Dinheiro que JÁ entrou de um atendimento que ainda não aconteceu: pix ou
+// cartão aprovado de um horário marcado para frente. Não é "recebido" (o
+// serviço não foi prestado) nem "a receber" (o valor já está na conta) — sem
+// esta linha o valor ficava invisível no painel, embora estivesse no banco.
+export function sumPrepaidRevenue({ from, to } = {}) {
+  return sumPrice({
+    status: { in: ["pending", "confirmed"] },
+    paymentStatus: "paid",
+    ...dateRange({ from, to }),
+  });
+}
+
 // O oposto: valor combinado que ainda não entrou. Inclui o que já foi atendido
 // e não foi pago e o que está agendado para frente; cancelado não conta.
 export function sumPendingRevenue({ from, to } = {}) {

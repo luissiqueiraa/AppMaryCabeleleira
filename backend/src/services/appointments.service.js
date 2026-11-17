@@ -106,11 +106,12 @@ function salonWallClock(date) {
 // As funções do repositório aceitam intervalo, caso um dia o painel queira
 // recortar por período.
 export async function getRevenueSummary() {
-  const [total, pending] = await Promise.all([
+  const [total, prepaid, pending] = await Promise.all([
     appointmentsRepository.sumReceivedRevenue(),
+    appointmentsRepository.sumPrepaidRevenue(),
     appointmentsRepository.sumPendingRevenue(),
   ]);
-  return { total, pending };
+  return { total, prepaid, pending };
 }
 
 // O frontend só oferece horários dentro do expediente, mas quem chama a API

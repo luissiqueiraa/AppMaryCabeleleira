@@ -71,10 +71,13 @@ async function limpar() {
 }
 
 // Cada agendamento em hora diferente: a constraint de sobreposição não deixa
-// empilhar no mesmo horário.
-let hora = 10;
+// empilhar no mesmo horário. Conta a partir de uma base e vira o dia sozinho —
+// o contador de hora anterior estourava em 23h e gerava Invalid Date quando a
+// suíte crescia.
+const BASE = new Date("2028-01-12T10:00:00.000Z");
+let criados = 0;
 function criar({ status, paymentStatus, paymentMethod = "on_site", price = "100.00" }) {
-  const scheduledAt = new Date(`2028-01-12T${String(hora++).padStart(2, "0")}:00:00.000Z`);
+  const scheduledAt = new Date(BASE.getTime() + criados++ * 60 * 60 * 1000);
   return prisma.appointment.create({
     data: {
       clientId: cliente.id,
@@ -120,6 +123,49 @@ describe("caixa do salão", () => {
     expect(await repository.sumPendingRevenue()).toBe(200);
   });
 
+  casoDeBanco("pago adiantado é o que já entrou de atendimento que não aconteceu", async () => {
+    await criar({ status: "confirmed", paymentStatus: "paid", paymentMethod: "pix" }); // 100
+    await criar({ status: "pending", paymentStatus: "paid", paymentMethod: "card" }); // 100
+    await criar({ status: "completed", paymentStatus: "paid" }); // já é "recebido"
+    await criar({ status: "confirmed", paymentStatus: "pending" }); // nada entrou
+    await criar({ status: "cancelled", paymentStatus: "paid" }); // devolução, não caixa
+
+    expect(await repository.sumPrepaidRevenue()).toBe(200);
+  });
+
+  // A regra que faltava: as três divisões não se sobrepõem e, juntas, cobrem
+  // todo valor não cancelado. Antes o pago adiantado não estava em nenhuma, e
+  // o dinheiro desaparecia do painel.
+  casoDeBanco("as três divisões não se sobrepõem e não deixam valor de fora", async () => {
+    await criar({ status: "completed", paymentStatus: "paid" }); // recebido
+    await criar({ status: "confirmed", paymentStatus: "paid" }); // pago adiantado
+    await criar({ status: "completed", paymentStatus: "pending" }); // a receber
+    await criar({ status: "confirmed", paymentStatus: "pending" }); // a receber
+    await criar({ status: "cancelled", paymentStatus: "paid" }); // fora de tudo
+
+    const recebido = await repository.sumReceivedRevenue();
+    const adiantado = await repository.sumPrepaidRevenue();
+    const aReceber = await repository.sumPendingRevenue();
+
+    expect(recebido).toBe(100);
+    expect(adiantado).toBe(100);
+    expect(aReceber).toBe(200);
+    // 500 criados, 100 cancelados: o resto tem de estar classificado.
+    expect(recebido + adiantado + aReceber).toBe(400);
+  });
+
+  casoDeBanco("atender quem pagou adiantado move o valor para 'recebido'", async () => {
+    const appt = await criar({ status: "confirmed", paymentStatus: "paid", price: "80.00" });
+
+    expect(await repository.sumPrepaidRevenue()).toBe(80);
+    expect(await repository.sumReceivedRevenue()).toBe(0);
+
+    await prisma.appointment.update({ where: { id: appt.id }, data: { status: "completed" } });
+
+    expect(await repository.sumPrepaidRevenue()).toBe(0);
+    expect(await repository.sumReceivedRevenue()).toBe(80);
+  });
+
   casoDeBanco("confirmar o pagamento move o valor de 'a receber' para 'recebido'", async () => {
     const appt = await criar({ status: "completed", paymentStatus: "pending", price: "150.00" });
 
@@ -134,6 +180,7 @@ describe("caixa do salão", () => {
 
   casoDeBanco("base sem agendamento soma zero, não null", async () => {
     expect(await repository.sumReceivedRevenue()).toBe(0);
+    expect(await repository.sumPrepaidRevenue()).toBe(0);
     expect(await repository.sumPendingRevenue()).toBe(0);
   });
 

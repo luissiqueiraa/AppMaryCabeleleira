@@ -4,6 +4,7 @@ const appointmentsRepository = {
   findAppointmentById: jest.fn(),
   updateAppointment: jest.fn(),
   sumReceivedRevenue: jest.fn(),
+  sumPrepaidRevenue: jest.fn(),
   sumPendingRevenue: jest.fn(),
 };
 const notificationsService = { notifyUser: jest.fn() };
@@ -106,10 +107,11 @@ describe("confirmar dinheiro recebido no salão", () => {
 });
 
 describe("caixa", () => {
-  it("separa recebido de a receber", async () => {
+  it("separa recebido, pago adiantado e a receber", async () => {
     appointmentsRepository.sumReceivedRevenue.mockResolvedValue(660);
+    appointmentsRepository.sumPrepaidRevenue.mockResolvedValue(120);
     appointmentsRepository.sumPendingRevenue.mockResolvedValue(940);
 
-    await expect(getRevenueSummary()).resolves.toEqual({ total: 660, pending: 940 });
+    await expect(getRevenueSummary()).resolves.toEqual({ total: 660, prepaid: 120, pending: 940 });
   });
 });

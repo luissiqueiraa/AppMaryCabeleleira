@@ -7,7 +7,7 @@ import ConfirmationModal from "../../../shared/components/ConfirmationModal";
 import ClientHistoryModal from "./ClientHistoryModal";
 import ClientProfileModal from "./ClientProfileModal";
 import { listClients, deleteClient } from "../services/clientService";
-import { clientFilters } from "../data/mockClients";
+import { clientFilters } from "../data/clientFilters";
 import { formatBRL } from "../../../shared/utils/formatCurrency";
 import { formatRelativeDate } from "../../../shared/utils/formatDate";
 import { maskBrazilianPhone } from "../../../shared/utils/phoneMask";

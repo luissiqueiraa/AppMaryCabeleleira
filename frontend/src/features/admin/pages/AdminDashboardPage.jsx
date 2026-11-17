@@ -126,13 +126,25 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Cinco cartões: três divisões de dinheiro que não se somam nem se
+          confundem. Em telas médias quebram em duas linhas em vez de
+          encolherem até o valor não caber. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard label="Agendamentos hoje" value={String(todayAppointments.length)} uppercaseLabel />
         <KpiCard label="Confirmados" value={String(confirmedToday.length)} uppercaseLabel />
-        {/* "Recebido" é dinheiro na mão: atendimento concluído E pagamento
-            confirmado. O que foi atendido sem pagar, e o que está agendado para
-            frente, aparece em "A receber". */}
+        {/* "Recebido" é dinheiro na mão por serviço prestado: atendimento
+            concluído E pagamento confirmado. */}
         <KpiCard label="Recebido" value={formatBRL(revenue?.total ?? 0)} uppercaseLabel />
+        {/* Valor que já está na conta de um atendimento que ainda não
+            aconteceu (pix ou cartão de horário futuro). Fica separado porque
+            não é faturamento ainda: se a cliente cancelar, volta para ela. */}
+        <KpiCard
+          label="Pago adiantado"
+          value={formatBRL(revenue?.prepaid ?? 0)}
+          hint={revenue?.prepaid ? "Já na conta, atendimento pendente" : undefined}
+          hintTone="positive"
+          uppercaseLabel
+        />
         <KpiCard
           label="A receber"
           value={formatBRL(revenue?.pending ?? 0)}
