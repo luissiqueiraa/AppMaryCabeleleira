@@ -42,7 +42,14 @@ beforeAll(async () => {
     data: { userId: usuaria.id, hireDate: new Date(), active: true },
   });
   servico = await prisma.service.create({
-    data: { name: "Serviço Caixa", category: "hair", duration: 30, price: "100.00", active: true },
+    data: {
+      name: "Serviço Caixa",
+      // A categoria é relação agora: o serviço precisa de uma existindo.
+      category: { create: { name: "Categoria Teste Caixa", slug: "teste-caixa" } },
+      duration: 30,
+      price: "100.00",
+      active: true,
+    },
   });
 });
 
@@ -58,6 +65,9 @@ async function limpar() {
   await prisma.employee.deleteMany({});
   await prisma.user.deleteMany({ where: { email: { contains: "@teste.local" } } });
   await prisma.service.deleteMany({});
+  // Depois dos serviços: a FK é Restrict, categoria com serviço dentro não sai.
+  // E o nome é único, então deixá-la faria a próxima execução falhar.
+  await prisma.serviceCategory.deleteMany({ where: { slug: { startsWith: "teste-" } } });
 }
 
 // Cada agendamento em hora diferente: a constraint de sobreposição não deixa

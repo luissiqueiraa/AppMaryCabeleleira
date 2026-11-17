@@ -141,11 +141,35 @@ model RefreshToken {
   @@map("refreshTokens")
 }
 
+// Categorias são dados, não uma lista fixa no código: o salão cria e renomeia
+// as suas. O slug é o identificador estável (nasce do nome e não muda ao
+// renomear) e é por ele que o frontend escolhe o ícone.
+model ServiceCategory {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  // Chave de ícone, não markup: o frontend traduz para o componente. A lista
+  // aceita está no validator (serviceCategories.validator.js) e o registro
+  // correspondente em frontend/src/shared/constants/categoryIcons.js — os dois
+  // precisam andar juntos.
+  icon      String?
+  sortOrder Int       @default(0)
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  services Service[]
+
+  @@index([active])
+  @@index([deletedAt])
+  @@map("service_categories")
+}
+
 model Service {
   id          String    @id @default(uuid())
   name        String
   description String?
-  category    String // hair | nails | makeup | brows
   duration    Int // minutos
   price       Decimal   @db.Decimal(10, 2)
   active      Boolean   @default(true)
@@ -153,10 +177,15 @@ model Service {
   updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
+  // Restrict: categoria com serviço dentro não pode ser apagada, senão o
+  // serviço ficaria sem categoria e o catálogo quebraria.
+  categoryId String
+  category   ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
   appointments AppointmentService[]
 
   @@index([active])
-  @@index([category])
+  @@index([categoryId])
   @@index([deletedAt])
   @@map("services")
 }

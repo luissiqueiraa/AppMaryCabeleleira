@@ -20,6 +20,10 @@ const KNOWN_MESSAGES = {
   "Client role is not configured": "A função de cliente não está configurada.",
   "Salon settings are not configured": "As configurações do salão ainda não foram definidas.",
   "Service not found": "Serviço não encontrado.",
+  "Category not found": "Categoria não encontrada.",
+  "A category with this name already exists": "Já existe uma categoria com esse nome.",
+  "Cannot delete a category that still has services":
+    "Essa categoria ainda tem serviços. Mova os serviços para outra categoria antes de excluí-la.",
   "Invalid credentials": "Email ou senha incorretos.",
   "Account temporarily locked due to multiple failed login attempts":
     "Conta temporariamente bloqueada após várias tentativas. Tente novamente em alguns minutos.",

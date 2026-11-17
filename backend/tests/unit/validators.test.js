@@ -2,6 +2,7 @@ import { createAppointmentSchema } from "../../src/validators/appointments.valid
 import { createPaymentSchema } from "../../src/validators/payments.validator.js";
 import { registerPasswordSchema } from "../../src/validators/password.schema.js";
 import { resetSystemSchema } from "../../src/validators/settings.validator.js";
+import { createCategorySchema, CATEGORY_ICONS } from "../../src/validators/serviceCategories.validator.js";
 
 const UUID = "3f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f";
 const OUTRO_UUID = "4f1c2d4e-5a6b-4c7d-8e9f-0a1b2c3d4e5f";
@@ -95,5 +96,29 @@ describe("reset do sistema", () => {
 
   it("aceita frase e senha", () => {
     expect(resetSystemSchema.body.safeParse({ confirmation: "APAGAR TUDO", password: "x" }).success).toBe(true);
+  });
+});
+
+describe("criar categoria de serviço", () => {
+  it("aceita categoria sem ícone (cai no padrão na vitrine)", () => {
+    const result = createCategorySchema.body.safeParse({ name: "Depilação" });
+    expect(result.success).toBe(true);
+  });
+
+  it.each(CATEGORY_ICONS)("aceita o ícone %s", (icon) => {
+    const result = createCategorySchema.body.safeParse({ name: "Depilação", icon });
+    expect(result.success).toBe(true);
+  });
+
+  // A lista é fechada porque o frontend traduz a chave para um componente:
+  // texto livre viraria ícone inexistente na página inicial.
+  it("recusa ícone fora da lista", () => {
+    const result = createCategorySchema.body.safeParse({ name: "Depilação", icon: "dragao" });
+    expect(result.success).toBe(false);
+  });
+
+  it("recusa nome curto demais", () => {
+    const result = createCategorySchema.body.safeParse({ name: "A" });
+    expect(result.success).toBe(false);
   });
 });

@@ -1,17 +1,9 @@
-import { FiChevronRight, FiScissors, FiDroplet, FiSun, FiWind, FiClock } from "react-icons/fi";
+import { FiChevronRight, FiClock } from "react-icons/fi";
 import Container from "../ui/Container";
 import SectionHeading from "../ui/SectionHeading";
 import Reveal from "../ui/Reveal";
 import { formatBRL } from "../../../../shared/utils/formatCurrency";
-
-// O catálogo vem do banco, mas ícone é decisão visual: mapeado pela categoria
-// que o serviço já tem cadastrada.
-const CATEGORY_ICON = {
-  hair: FiScissors,
-  nails: FiDroplet,
-  makeup: FiSun,
-  brows: FiWind,
-};
+import { categoryIcon } from "../../../../shared/constants/categoryIcons";
 
 export default function Services({ services = [], loadStatus = "success" }) {
   return (
@@ -37,7 +29,10 @@ export default function Services({ services = [], loadStatus = "success" }) {
         {services.length > 0 && (
           <ul className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {services.map((service, index) => {
-              const Icon = CATEGORY_ICON[service.category] ?? FiScissors;
+              // O ícone é escolhido no painel, por categoria: antes vinha de um
+              // mapa fixo com quatro chaves, então categoria nova caía sempre
+              // na tesoura.
+              const Icon = categoryIcon(service.categoryIcon);
               return (
                 <Reveal
                   as="li"

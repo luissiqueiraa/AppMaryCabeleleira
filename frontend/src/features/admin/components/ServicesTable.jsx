@@ -5,20 +5,13 @@ import ConfirmationModal from "../../../shared/components/ConfirmationModal";
 import OverflowMenu from "../../../shared/components/OverflowMenu";
 import ServiceFormModal from "./ServiceFormModal";
 import { listServices, deleteService } from "../services/serviceCatalogService";
-import { serviceFilters } from "../data/mockAdminServices";
+import { useServiceCategories } from "../hooks/useServiceCategories";
+import ServiceCategoriesModal from "./ServiceCategoriesModal";
 import { formatBRL } from "../../../shared/utils/formatCurrency";
 import { useAuth } from "../../../shared/contexts/useAuth";
 import { ROLES } from "../../../shared/constants/roles";
 import { useToast } from "../../../shared/contexts/useToast";
 import { getErrorMessage } from "../../../shared/utils/errorMessage";
-
-const CATEGORY_LABEL = {
-  all: "Todos",
-  hair: "Cabelo",
-  nails: "Unhas",
-  makeup: "Maquiagem",
-  brows: "Sobrancelha",
-};
 
 export default function ServicesTable() {
   const { user } = useAuth();
@@ -31,6 +24,11 @@ export default function ServicesTable() {
   const [isCreating, setIsCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isManagingCategories, setIsManagingCategories] = useState(false);
+  const { categories, reload: reloadCategories } = useServiceCategories();
+
+  // "Todos" na frente, depois as categorias do banco na ordem definida nelas.
+  const filterOptions = [{ id: "all", label: "Todos" }, ...categories.map((c) => ({ id: c.id, label: c.name }))];
 
   function loadServices() {
     listServices()
@@ -60,7 +58,7 @@ export default function ServicesTable() {
   }, []);
 
   const filteredServices =
-    filter === "all" ? services : services.filter((service) => service.category === filter);
+    filter === "all" ? services : services.filter((service) => service.categoryId === filter);
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm sm:p-5 lg:p-6">
@@ -68,12 +66,21 @@ export default function ServicesTable() {
         <h2 className="font-display text-lg font-semibold text-gray-900">Todos os serviços</h2>
         <div className="flex items-center gap-3">
           <AutocompleteFilter
-            options={serviceFilters}
+            options={filterOptions}
             value={filter}
             onChange={setFilter}
             ariaLabel="Filtrar serviços"
             placeholder="Filtrar serviços"
           />
+          {canManageServices && (
+            <button
+              type="button"
+              onClick={() => setIsManagingCategories(true)}
+              className="rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Categorias
+            </button>
+          )}
           {canManageServices && (
             <button
               type="button"
@@ -114,7 +121,7 @@ export default function ServicesTable() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold text-gray-900">{service.name}</p>
                 <p className="text-xs text-gray-500">
-                  {CATEGORY_LABEL[service.category] ?? service.category} · {service.duration} min
+                  {service.categoryName ?? "Sem categoria"} · {service.duration} min
                 </p>
                 <p className="mt-0.5 text-sm font-semibold text-gray-900">{formatBRL(service.price)}</p>
               </div>
@@ -159,7 +166,7 @@ export default function ServicesTable() {
                       </div>
                     </td>
                     <td className="py-4 pr-4 align-middle whitespace-nowrap text-gray-600">
-                      {CATEGORY_LABEL[service.category] ?? service.category}
+                      {service.categoryName ?? "Sem categoria"}
                     </td>
                     <td className="py-4 pr-4 align-middle whitespace-nowrap text-gray-600">
                       {service.duration} min
@@ -190,6 +197,17 @@ export default function ServicesTable() {
       )}
       {formTarget && (
         <ServiceFormModal service={formTarget} onClose={() => setFormTarget(null)} onSaved={loadServices} />
+      )}
+      {isManagingCategories && (
+        <ServiceCategoriesModal
+          onClose={() => setIsManagingCategories(false)}
+          onChanged={() => {
+            // Renomear ou excluir categoria muda o rótulo e o filtro da
+            // tabela, então as duas listas são recarregadas.
+            reloadCategories();
+            loadServices();
+          }}
+        />
       )}
 
       <ConfirmationModal

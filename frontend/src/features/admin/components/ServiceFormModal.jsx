@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { FiX } from "react-icons/fi";
 import FormField from "../../../shared/components/FormField";
 import { createService, updateService } from "../services/serviceCatalogService";
-import { serviceCategories } from "../data/mockAdminServices";
+import { useServiceCategories } from "../hooks/useServiceCategories";
 import { useToast } from "../../../shared/contexts/useToast";
 import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
@@ -11,8 +11,12 @@ export default function ServiceFormModal({ service, onClose, onSaved }) {
   const dialogRef = useRef(null);
   const toast = useToast();
 
+  const { categories, loadStatus: categoriesStatus } = useServiceCategories();
+
   const [name, setName] = useState(service?.name ?? "");
-  const [category, setCategory] = useState(service?.category ?? serviceCategories[0].id);
+  // Em serviço novo não há categoria escolhida ainda, e a lista chega depois
+  // (vem da API). Fica vazio até lá e o select cai na primeira categoria.
+  const [categoryId, setCategoryId] = useState(service?.categoryId ?? "");
   const [duration, setDuration] = useState(service?.duration ?? "");
   const [price, setPrice] = useState(service?.price ?? "");
   const [isSaving, setIsSaving] = useState(false);
@@ -25,7 +29,12 @@ export default function ServiceFormModal({ service, onClose, onSaved }) {
     event.preventDefault();
     setIsSaving(true);
     try {
-      const payload = { name, category, duration: Number(duration), price: Number(price) };
+      const payload = {
+        name,
+        categoryId: categoryId || categories[0]?.id,
+        duration: Number(duration),
+        price: Number(price),
+      };
       if (isEditing) {
         await updateService(service.id, payload);
         toast.success("Serviço atualizado com sucesso.");
@@ -82,16 +91,25 @@ export default function ServiceFormModal({ service, onClose, onSaved }) {
             </label>
             <select
               id="service-category"
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-              className="w-full rounded-md border border-gray-200 px-3 py-2.5 text-sm text-gray-900 outline-none focus-visible:border-pink-600 focus-visible:ring-2 focus-visible:ring-pink-100"
+              value={categoryId || categories[0]?.id || ""}
+              onChange={(event) => setCategoryId(event.target.value)}
+              disabled={categoriesStatus !== "success" || categories.length === 0}
+              className="w-full rounded-md border border-gray-200 px-3 py-2.5 text-sm text-gray-900 outline-none focus-visible:border-pink-600 focus-visible:ring-2 focus-visible:ring-pink-100 disabled:bg-gray-50 disabled:text-gray-400"
             >
-              {serviceCategories.map((item) => (
+              {categoriesStatus === "loading" ? <option value="">Carregando...</option> : null}
+              {categoriesStatus === "error" ? <option value="">Não foi possível carregar</option> : null}
+              {categories.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.label}
+                  {item.name}
                 </option>
               ))}
             </select>
+            {categoriesStatus === "success" && categories.length === 0 ? (
+              <p className="mt-1.5 text-xs text-gray-500">
+                Nenhuma categoria cadastrada. Crie uma em &quot;Gerenciar categorias&quot; antes de cadastrar o
+                serviço.
+              </p>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -125,7 +143,7 @@ export default function ServiceFormModal({ service, onClose, onSaved }) {
 
           <button
             type="submit"
-            disabled={isSaving}
+            disabled={isSaving || categories.length === 0}
             className="w-full rounded-lg bg-pink-600 py-2.5 text-sm font-semibold text-white hover:bg-pink-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSaving ? "Salvando..." : isEditing ? "Salvar alterações" : "Criar serviço"}
