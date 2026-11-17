@@ -1,5 +1,4 @@
 import { FiMail } from "react-icons/fi";
-import { Link } from "react-router-dom";
 import { useLoginForm } from "../hooks/useLoginForm";
 import FormField from "../../../shared/components/FormField";
 import PasswordInput from "./PasswordInput";
@@ -50,8 +49,8 @@ export default function LoginForm() {
         }}
       />
 
-      <div className="flex items-center justify-end sm:justify-between">
-        <label className="hidden items-center gap-2 text-sm text-gray-600 sm:flex">
+      <div className="flex items-center">
+        <label className="flex items-center gap-2 text-sm text-gray-600">
           <input
             type="checkbox"
             name="rememberMe"
@@ -61,9 +60,6 @@ export default function LoginForm() {
           />
           Lembrar de mim
         </label>
-        <Link to="/forgot-password" className="text-sm font-medium text-pink-600 hover:underline">
-          Esqueci a senha
-        </Link>
       </div>
 
       <button

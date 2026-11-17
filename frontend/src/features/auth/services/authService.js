@@ -51,12 +51,3 @@ export async function me() {
   return data;
 }
 
-export async function forgotPassword({ email }) {
-  const { data } = await api.post("/v1/auth/forgot-password", { email });
-  return data;
-}
-
-export async function resetPassword({ token, newPassword }) {
-  const { data } = await api.post("/v1/auth/reset-password", { token, newPassword });
-  return data;
-}

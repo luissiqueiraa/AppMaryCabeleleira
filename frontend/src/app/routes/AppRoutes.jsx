@@ -13,7 +13,6 @@ const NotFoundPage = lazy(() => import("../../features/notFound/pages/NotFoundPa
 
 const LoginPage = lazy(() => import("../../features/auth/pages/LoginPage"));
 const RegisterPage = lazy(() => import("../../features/auth/pages/RegisterPage"));
-const ForgotPasswordPage = lazy(() => import("../../features/auth/pages/ForgotPasswordPage"));
 const CompleteProfilePage = lazy(() => import("../../features/auth/pages/CompleteProfilePage"));
 const PrivacyPolicyPage = lazy(() => import("../../features/legal/pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("../../features/legal/pages/TermsOfServicePage"));
@@ -55,7 +54,6 @@ export default function AppRoutes() {
         <Route element={<FocusLayout />}>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         </Route>
 
         <Route element={<PrivateRoute allowedRoles={[ROLES.CLIENT, ROLES.OWNER, ROLES.ADMIN, ROLES.EMPLOYEE]} />}>
