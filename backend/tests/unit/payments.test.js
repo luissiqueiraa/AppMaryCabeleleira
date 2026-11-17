@@ -12,6 +12,7 @@ const notificationsService = { notifyUser: jest.fn() };
 const mercadoPago = {
   isOnlinePaymentEnabled: jest.fn(() => true),
   getPayment: jest.fn(),
+  findPaymentByExternalReference: jest.fn(),
   createPixPayment: jest.fn(),
   createCardCheckout: jest.fn(),
   isWebhookSignatureValid: jest.fn(() => null),
@@ -59,6 +60,10 @@ const aprovado = (overrides = {}) => ({
 
 beforeEach(() => {
   paymentsRepository.updatePayment.mockImplementation((id, data) => ({ ...cobrancaPendente(), id, ...data }));
+  // Padrão: o provedor não tem pagamento para a referência. Sem isto, o
+  // mockResolvedValue de um teste vazaria para o seguinte, e um pagamento
+  // vencido seria reconciliado com a resposta do caso anterior.
+  mercadoPago.findPaymentByExternalReference.mockResolvedValue(null);
 });
 
 describe("confirmação de pagamento (via webhook)", () => {
@@ -237,6 +242,70 @@ describe("consulta da cobrança", () => {
     expect(mercadoPago.getPayment).toHaveBeenCalledWith("mp-999");
     expect(dto.status).toBe("paid");
     expect(dto.appointmentId).toBe("appt-2");
+  });
+
+  // Cartão em localhost: o webhook não alcança a máquina, então a baixa
+  // depende inteiramente de achar o pagamento pela referência externa.
+  it("cartão sem id do provedor é achado pela referência externa e confirmado", async () => {
+    paymentsRepository.findPaymentById.mockResolvedValue(
+      cobrancaPendente({ method: "card", providerPaymentId: null })
+    );
+    mercadoPago.findPaymentByExternalReference.mockResolvedValue(
+      aprovado({ providerPaymentId: "mp-card-1", method: "master" })
+    );
+    appointmentsService.createAppointmentForPayment.mockResolvedValue({ id: "appt-3" });
+
+    const dto = await paymentsService.getPayment("pay-1");
+
+    expect(mercadoPago.findPaymentByExternalReference).toHaveBeenCalledWith("pay-1");
+    expect(mercadoPago.getPayment).not.toHaveBeenCalled();
+    expect(dto.status).toBe("paid");
+    expect(dto.appointmentId).toBe("appt-3");
+  });
+
+  it("o id do provedor é gravado quando o cartão é confirmado sem webhook", async () => {
+    paymentsRepository.findPaymentById.mockResolvedValue(
+      cobrancaPendente({ method: "card", providerPaymentId: null })
+    );
+    mercadoPago.findPaymentByExternalReference.mockResolvedValue(
+      aprovado({ providerPaymentId: "mp-card-7" })
+    );
+    appointmentsService.createAppointmentForPayment.mockResolvedValue({ id: "appt-4" });
+
+    await paymentsService.getPayment("pay-1");
+
+    expect(paymentsRepository.updatePayment).toHaveBeenCalledWith(
+      "pay-1",
+      expect.objectContaining({ status: "paid", providerPaymentId: "mp-card-7" })
+    );
+  });
+
+  it("checkout aberto e ainda não pago segue pendente, sem criar agendamento", async () => {
+    paymentsRepository.findPaymentById.mockResolvedValue(
+      cobrancaPendente({ method: "card", providerPaymentId: null })
+    );
+    mercadoPago.findPaymentByExternalReference.mockResolvedValue(null);
+
+    const dto = await paymentsService.getPayment("pay-1");
+
+    expect(dto.status).toBe("pending");
+    expect(appointmentsService.createAppointmentForPayment).not.toHaveBeenCalled();
+    expect(paymentsRepository.updatePayment).not.toHaveBeenCalled();
+  });
+
+  it("cartão recusado marca a cobrança como falha", async () => {
+    paymentsRepository.findPaymentById.mockResolvedValue(
+      cobrancaPendente({ method: "card", providerPaymentId: null })
+    );
+    mercadoPago.findPaymentByExternalReference.mockResolvedValue(aprovado({ status: "rejected" }));
+    paymentsRepository.updatePayment.mockResolvedValue(
+      cobrancaPendente({ method: "card", status: "failed", failureReason: "rejected" })
+    );
+
+    const dto = await paymentsService.getPayment("pay-1");
+
+    expect(dto.status).toBe("failed");
+    expect(appointmentsService.createAppointmentForPayment).not.toHaveBeenCalled();
   });
 
   it("cobrança vencida vira expired", async () => {

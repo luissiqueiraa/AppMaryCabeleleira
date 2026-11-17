@@ -57,6 +57,20 @@ logada — a resposta passa a trazer `"onlinePaymentsEnabled": true`:
 curl -s http://localhost:3000/api/v1/settings -H "Authorization: Bearer <token>" | grep onlinePayments
 ```
 
+> **Ao trocar uma variável, recrie o container — não basta reiniciar.** O
+> `docker-compose.yml` usa `env_file`, e o Compose injeta essas variáveis no
+> ambiente do container **na criação**. Um `docker compose restart` reaproveita
+> o container, e o `dotenv` não sobrescreve variável que já existe no ambiente:
+> o `.env` fica com o valor novo e o processo segue com o velho, sem nenhum
+> aviso. O certo é:
+>
+> ```bash
+> docker compose up -d --force-recreate backend
+> ```
+>
+> Para conferir qual valor o processo realmente tem, rode `npm run check:mp`:
+> ele mostra de qual conta é o token em uso.
+
 ## 4. Configurar o webhook
 
 O webhook é o que avisa o app que o pagamento entrou. **É ele que cria o
@@ -96,6 +110,40 @@ curl -s https://api.mercadopago.com/v1/payment_methods \
 Enquanto o pix não estiver habilitado, o app mostra "O pix está indisponível no
 momento. Use cartão ou pague no salão." em vez de um erro genérico.
 
+## 4.1.1. Diagnosticar a credencial
+
+Antes de caçar erro no código, pergunte à API de quem é o token:
+
+```bash
+docker compose exec backend npm run check:mp
+```
+
+Ele responde de quem é a credencial, se a conta é de teste ou real, e se o pix
+está habilitado — e, quando não está, diz qual das causas é. Não cria cobrança
+nem move dinheiro.
+
+**Conta de teste não cadastra chave pix.** O painel do Mercado Pago não oferece
+a seção de Pix em contas de teste, então não há como habilitar o pix ali. Em
+teste, o cartão funciona e o pix não: é uma limitação do provedor, não do app.
+Para exercitar o pix é preciso a credencial de **produção** de uma conta real
+que tenha chave cadastrada — e aí todo pagamento é dinheiro de verdade.
+
+### Usar a credencial de produção em desenvolvimento
+
+Funciona, e às vezes é o único jeito de ver o pix de ponta a ponta. O que muda:
+
+| | Em teste | Com credencial de produção |
+|---|---|---|
+| Pix | recusado (sem chave) | funciona |
+| Cartões de teste | funcionam | **recusados** |
+| Dinheiro | nenhum | real, com taxa do Mercado Pago |
+| Devolução | — | manual, no painel |
+
+Para não gastar, cadastre um serviço de centavos no painel do salão e agende
+esse. E lembre: `.env` não vai para o Git, mas credencial de produção em
+máquina de desenvolvimento é credencial exposta — ao publicar, gere um par
+novo e deixe este só para a sua máquina.
+
 ## 4.2. Criar o usuário de teste comprador
 
 Em teste são necessárias **duas** contas: a vendedora (de onde vem o access
@@ -117,12 +165,28 @@ npx localtunnel --port 3000      # ou ngrok http 3000
 Coloque a URL gerada em `PUBLIC_API_URL`, configure o webhook do painel para
 `<url>/api/v1/payments/webhook` e reinicie a API.
 
-**Sem túnel (só polling)**
+**Sem túnel (só polling)** — recomendado para desenvolver
 
-Funciona sem configurar nada: a tela de espera do pix pergunta o status ao
-backend a cada 4 segundos, e o backend consulta o Mercado Pago. O agendamento é
-criado nessa consulta, igual ao webhook. É mais lento, mas serve para
-desenvolver.
+Funciona sem configurar nada, e vale para pix **e** cartão: a tela de espera
+pergunta o status ao backend a cada 4 segundos, o backend consulta o Mercado
+Pago e cria o agendamento nessa consulta, pelo mesmo caminho do webhook. É mais
+lento, mas não exige endereço público.
+
+Os dois meios chegam ao pagamento de formas diferentes, e é por isso que o
+cartão precisou de tratamento próprio:
+
+| | Como o backend acha o pagamento |
+|---|---|
+| **Pix** | A cobrança nasce com o id do provedor na resposta; basta consultá-lo |
+| **Cartão** | A preferência do Checkout Pro é criada **antes** de o pagamento existir, então não há id. O pagamento é procurado por `external_reference` (`GET /v1/payments/search`), que é o id da nossa cobrança |
+
+Sem essa busca por referência, uma cobrança de cartão ficaria pendente para
+sempre em localhost, esperando um webhook que nunca chega.
+
+> O `auto_return` (voltar sozinho ao app depois de aprovar) exige endereço
+> público — com localhost o Mercado Pago recusa a preferência inteira. O código
+> omite esse campo quando a URL não é pública, e a cliente volta pelo botão
+> "Voltar ao site" do checkout. O resto do fluxo é idêntico.
 
 ### Roteiro de teste
 

@@ -130,11 +130,7 @@ export async function createCardCheckout({ paymentId, amount, description, payer
   };
 }
 
-// Fonte da verdade sobre um pagamento. É o que faz o webhook ser seguro: a
-// notificação só diz "olha o pagamento X", e quem responde se foi aprovado é
-// a API do provedor, não o corpo da requisição que chegou.
-export async function getPayment(providerPaymentId) {
-  const data = await request(`/v1/payments/${providerPaymentId}`);
+function toProviderPayment(data) {
   return {
     providerPaymentId: String(data.id),
     status: data.status,
@@ -142,6 +138,38 @@ export async function getPayment(providerPaymentId) {
     externalReference: data.external_reference ?? null,
     method: data.payment_method_id ?? null,
   };
+}
+
+// Fonte da verdade sobre um pagamento. É o que faz o webhook ser seguro: a
+// notificação só diz "olha o pagamento X", e quem responde se foi aprovado é
+// a API do provedor, não o corpo da requisição que chegou.
+export async function getPayment(providerPaymentId) {
+  const data = await request(`/v1/payments/${providerPaymentId}`);
+  return toProviderPayment(data);
+}
+
+// O Checkout Pro cria a preferência ANTES de o pagamento existir, então não há
+// id do provedor para consultar — ele chegaria pelo webhook. Quando o webhook
+// não chega (em localhost o provedor não alcança a máquina, e em produção uma
+// notificação pode se perder), é por aqui que o pagamento é encontrado: pelo
+// external_reference que mandamos na preferência.
+export async function findPaymentByExternalReference(externalReference) {
+  const query = new URLSearchParams({
+    external_reference: externalReference,
+    sort: "date_created",
+    criteria: "desc",
+  });
+  const data = await request(`/v1/payments/search?${query}`);
+  const results = Array.isArray(data?.results) ? data.results : [];
+  if (results.length === 0) {
+    return null; // checkout aberto e ainda não pago
+  }
+
+  // A cliente pode ter tentado mais de uma vez no mesmo checkout (cartão
+  // recusado e outro em seguida). A aprovada é a que vale; sem nenhuma
+  // aprovada, a mais recente é quem conta a situação atual.
+  const chosen = results.find((payment) => payment.status === "approved") ?? results[0];
+  return toProviderPayment(chosen);
 }
 
 // Assinatura do webhook (x-signature: ts=...,v1=...). Confere que a

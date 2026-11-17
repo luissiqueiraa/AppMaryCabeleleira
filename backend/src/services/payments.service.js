@@ -149,7 +149,7 @@ export async function getPayment(id) {
     throw new AppError("Payment not found", 404);
   }
 
-  if (payment.status === "pending" && payment.providerPaymentId) {
+  if (payment.status === "pending") {
     payment = await reconcile(payment);
   }
 
@@ -161,7 +161,19 @@ export async function getPayment(id) {
 }
 
 async function reconcile(payment) {
-  const providerPayment = await mercadoPago.getPayment(payment.providerPaymentId);
+  // Pix já nasce com o id do provedor. Cartão não: a preferência do Checkout
+  // Pro é criada antes de o pagamento existir, então ele é procurado pelo
+  // external_reference. É isso que faz o cartão fechar sem webhook — em
+  // desenvolvimento o provedor não alcança localhost.
+  const providerPayment = payment.providerPaymentId
+    ? await mercadoPago.getPayment(payment.providerPaymentId)
+    : await mercadoPago.findPaymentByExternalReference(payment.id);
+
+  // Checkout aberto e a cliente ainda não pagou: nada a reconciliar.
+  if (!providerPayment) {
+    return payment;
+  }
+
   if (providerPayment.status === "approved") {
     return confirmPayment(payment, providerPayment);
   }

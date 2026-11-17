@@ -15,6 +15,7 @@
     "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit",
     "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/integration --runInBand",
     "test:db:setup": "prisma migrate deploy",
+    "check:mp": "node scripts/check-mercadopago.js",
     "start:migrate": "prisma migrate deploy && node src/server.js"
   },
   "prisma": {
