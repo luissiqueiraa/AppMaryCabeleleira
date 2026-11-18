@@ -192,6 +192,8 @@ export default function NewAppointmentPage() {
               paymentMethod={flow.paymentMethod}
               onPaymentMethodChange={flow.setPaymentMethod}
               onlinePaymentsEnabled={flow.onlinePaymentsEnabled}
+              notes={flow.notes}
+              onNotesChange={flow.setNotes}
               isLoading={flow.status === "loading"}
               isComplete={flow.isComplete}
               onConfirm={flow.confirm}

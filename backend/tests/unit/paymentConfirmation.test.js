@@ -3,9 +3,12 @@ import { jest } from "@jest/globals";
 const appointmentsRepository = {
   findAppointmentById: jest.fn(),
   updateAppointment: jest.fn(),
+  softDeleteAppointment: jest.fn(),
   sumReceivedRevenue: jest.fn(),
   sumPrepaidRevenue: jest.fn(),
   sumPendingRevenue: jest.fn(),
+  sumRefundDue: jest.fn(),
+  markAppointmentRefunded: jest.fn(),
 };
 const notificationsService = { notifyUser: jest.fn() };
 
@@ -16,8 +19,10 @@ jest.unstable_mockModule("../../src/repositories/settings.repository.js", () => 
 jest.unstable_mockModule("../../src/repositories/auth.repository.js", () => ({ findUserById: jest.fn() }));
 jest.unstable_mockModule("../../src/services/notifications.service.js", () => notificationsService);
 jest.unstable_mockModule("../../src/utils/auditLogger.js", () => ({ recordAuditLog: jest.fn() }));
+const appointmentEvents = { publishAppointmentChange: jest.fn() };
+jest.unstable_mockModule("../../src/utils/appointmentEvents.js", () => appointmentEvents);
 
-const { updateAppointmentPayment, getRevenueSummary } = await import(
+const { updateAppointmentPayment, getRevenueSummary, deleteAppointment, markAppointmentRefunded } = await import(
   "../../src/services/appointments.service.js"
 );
 
@@ -111,7 +116,60 @@ describe("caixa", () => {
     appointmentsRepository.sumReceivedRevenue.mockResolvedValue(660);
     appointmentsRepository.sumPrepaidRevenue.mockResolvedValue(120);
     appointmentsRepository.sumPendingRevenue.mockResolvedValue(940);
+    appointmentsRepository.sumRefundDue.mockResolvedValue(90);
 
-    await expect(getRevenueSummary()).resolves.toEqual({ total: 660, prepaid: 120, pending: 940 });
+    await expect(getRevenueSummary()).resolves.toEqual({ total: 660, prepaid: 120, pending: 940, refundDue: 90 });
+  });
+});
+
+describe("excluir atendimento", () => {
+  it("permite excluir mesmo concluído e pago por pix", async () => {
+    appointmentsRepository.findAppointmentById.mockResolvedValue(
+      agendamento({ status: "completed", paymentMethod: "pix", paymentStatus: "paid" })
+    );
+
+    await expect(deleteAppointment("appt-1", req)).resolves.toBeUndefined();
+    expect(appointmentsRepository.softDeleteAppointment).toHaveBeenCalledWith("appt-1");
+  });
+
+  it("avisa o painel em tempo real, com quem fez a mudança", async () => {
+    appointmentsRepository.findAppointmentById.mockResolvedValue(agendamento());
+
+    await deleteAppointment("appt-1", req);
+
+    expect(appointmentEvents.publishAppointmentChange).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "deleted", appointmentId: "appt-1", actorId: "admin-1" })
+    );
+  });
+});
+
+describe("estorno de atendimento cancelado e pago", () => {
+  it("registra o estorno, avisa a cliente e o painel", async () => {
+    const cancelado = agendamento({ status: "cancelled", paymentMethod: "pix", paymentStatus: "paid" });
+    appointmentsRepository.findAppointmentById.mockResolvedValue(cancelado);
+    appointmentsRepository.markAppointmentRefunded.mockResolvedValue({ ...cancelado, paymentStatus: "refunded" });
+
+    const result = await markAppointmentRefunded("appt-1", req);
+
+    expect(result.paymentStatus).toBe("refunded");
+    expect(appointmentsRepository.markAppointmentRefunded).toHaveBeenCalledWith("appt-1");
+    expect(notificationsService.notifyUser).toHaveBeenCalledWith(
+      "cli-1",
+      expect.objectContaining({ title: "Estorno registrado" })
+    );
+    expect(appointmentEvents.publishAppointmentChange).toHaveBeenCalledWith(
+      expect.objectContaining({ action: "refunded", actorId: "admin-1" })
+    );
+  });
+
+  it.each([
+    ["não foi cancelado", { status: "completed", paymentStatus: "paid" }],
+    ["não foi pago", { status: "cancelled", paymentStatus: "pending" }],
+    ["já foi estornado", { status: "cancelled", paymentStatus: "refunded" }],
+  ])("recusa quando o atendimento %s", async (_caso, overrides) => {
+    appointmentsRepository.findAppointmentById.mockResolvedValue(agendamento(overrides));
+
+    await expect(markAppointmentRefunded("appt-1", req)).rejects.toMatchObject({ statusCode: 422 });
+    expect(appointmentsRepository.markAppointmentRefunded).not.toHaveBeenCalled();
   });
 });

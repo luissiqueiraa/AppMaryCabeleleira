@@ -15,6 +15,8 @@ export default function BookingSummaryCard({
   paymentMethod,
   onPaymentMethodChange,
   onlinePaymentsEnabled,
+  notes,
+  onNotesChange,
   isLoading,
   isComplete,
   onConfirm,
@@ -77,6 +79,23 @@ export default function BookingSummaryCard({
           value={paymentMethod}
           onChange={onPaymentMethodChange}
           onlinePaymentsEnabled={onlinePaymentsEnabled}
+        />
+      </div>
+
+      {/* Mesmo campo da confirmação do mobile: sem ele, quem agendava pelo
+          computador não tinha onde deixar recado para a profissional. */}
+      <div className="mt-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+        <label htmlFor="booking-notes-desktop" className="text-sm font-medium text-gray-700">
+          Alguma observação?
+        </label>
+        <textarea
+          id="booking-notes-desktop"
+          value={notes}
+          onChange={(event) => onNotesChange(event.target.value)}
+          placeholder="Ex: Não precisa lavar, etc.."
+          rows={3}
+          maxLength={500}
+          className="mt-1.5 w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus-visible:border-pink-600 focus-visible:ring-2 focus-visible:ring-pink-100"
         />
       </div>
 

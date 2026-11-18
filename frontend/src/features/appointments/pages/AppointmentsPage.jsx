@@ -89,7 +89,13 @@ export default function AppointmentsPage() {
       <ConfirmationModal
         open={Boolean(target)}
         title="Cancelar agendamento"
-        description={target ? `Tem certeza que deseja cancelar ${target.service}?` : ""}
+        description={
+          target
+            ? `Tem certeza que deseja cancelar ${target.service}?${
+                target.paymentStatus === "paid" ? ` Você já pagou ${target.price}: depois de cancelar, fale com o salão pelo WhatsApp para combinar o estorno.` : ""
+              }`
+            : ""
+        }
         confirmLabel="Sim, cancelar"
         cancelLabel="Manter horário"
         isLoading={isCancelling}

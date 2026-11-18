@@ -3,7 +3,6 @@ import { hashPassword, verifyPassword } from "../utils/password.js";
 import {
   signAccessToken,
   generateRefreshToken,
-  generateRandomToken,
   hashToken,
 } from "../utils/token.js";
 import { recordAuditLog } from "../utils/auditLogger.js";
@@ -12,7 +11,6 @@ import * as authRepository from "../repositories/auth.repository.js";
 
 const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_DURATION_MINUTES = 15;
-const PASSWORD_RESET_EXPIRES_MINUTES = 15;
 
 function toSafeUser(user) {
   return {
@@ -303,7 +301,7 @@ export async function changeMyPassword(userId, { currentPassword, newPassword },
   }
 
   const passwordHash = await hashPassword(newPassword);
-  await authRepository.resetPasswordAndClearToken(userId, passwordHash);
+  await authRepository.updatePassword(userId, passwordHash);
   await authRepository.revokeAllRefreshTokensForUser(userId);
   await recordAuditLog({ userId, action: "user.password_change", entity: "User", entityId: userId, req });
 
@@ -315,54 +313,4 @@ export async function deleteMe(userId, req) {
   await authRepository.revokeAllRefreshTokensForUser(userId);
   await recordAuditLog({ userId, action: "user.self_delete", entity: "User", entityId: userId, req });
   return { message: "Account deleted" };
-}
-
-export async function forgotPassword(email, req) {
-  const user = await authRepository.findUserByEmail(email);
-
-  if (!user) {
-    // Resposta genérica: não revela se o e-mail existe na base.
-    return { message: "If the email exists, a reset link was generated." };
-  }
-
-  const rawToken = generateRandomToken();
-  const tokenHash = hashToken(rawToken);
-  const expiresAt = new Date(Date.now() + PASSWORD_RESET_EXPIRES_MINUTES * 60 * 1000);
-
-  await authRepository.setPasswordResetToken(user.id, { tokenHash, expiresAt });
-  await recordAuditLog({
-    userId: user.id,
-    action: "auth.password_reset_requested",
-    entity: "User",
-    entityId: user.id,
-    req,
-  });
-
-  // TODO (módulo notifications): disparar e-mail real com o link de reset.
-  // Sem provider de e-mail configurado ainda, o token só é exposto em dev.
-  const devOnlyToken = process.env.NODE_ENV === "development" ? rawToken : undefined;
-
-  return { message: "If the email exists, a reset link was generated.", devOnlyToken };
-}
-
-export async function resetPassword({ token, newPassword }, req) {
-  const tokenHash = hashToken(token);
-  const user = await authRepository.findUserByResetTokenHash(tokenHash);
-
-  if (!user || !user.passwordResetExpiresAt || user.passwordResetExpiresAt < new Date()) {
-    throw new AppError("Invalid or expired reset token", 400);
-  }
-
-  const passwordHash = await hashPassword(newPassword);
-  await authRepository.resetPasswordAndClearToken(user.id, passwordHash);
-  await authRepository.revokeAllRefreshTokensForUser(user.id);
-  await recordAuditLog({
-    userId: user.id,
-    action: "auth.password_reset_completed",
-    entity: "User",
-    entityId: user.id,
-    req,
-  });
-
-  return { message: "Password updated successfully" };
 }

@@ -1,5 +1,5 @@
 // Integração: o caixa é uma agregação SQL, então o que importa é o que o
-// Postgres soma. Aqui a regra verificada é "Recebido = concluído E pago".
+// Postgres soma. Aqui a regra verificada é "Recebido = pago e não cancelado".
 import { PrismaClient } from "@prisma/client";
 import * as repository from "../../src/repositories/appointments.repository.js";
 
@@ -103,15 +103,15 @@ const casoDeBanco = (nome, fn) =>
   });
 
 describe("caixa do salão", () => {
-  casoDeBanco("soma só o que foi concluído e pago", async () => {
+  casoDeBanco("recebido é todo pagamento confirmado, concluído ou não", async () => {
     await criar({ status: "completed", paymentStatus: "paid" }); // entra: 100
     await criar({ status: "completed", paymentStatus: "paid", paymentMethod: "pix" }); // entra: 100
+    await criar({ status: "confirmed", paymentStatus: "paid", paymentMethod: "pix" }); // entra: 100
     await criar({ status: "completed", paymentStatus: "pending" }); // atendido, não pagou
-    await criar({ status: "confirmed", paymentStatus: "paid" }); // pagou adiantado, não atendeu
     await criar({ status: "confirmed", paymentStatus: "pending" }); // só agendado
-    await criar({ status: "cancelled", paymentStatus: "pending" }); // cancelado
+    await criar({ status: "cancelled", paymentStatus: "paid" }); // volta para a cliente
 
-    expect(await repository.sumReceivedRevenue()).toBe(200);
+    expect(await repository.sumReceivedRevenue()).toBe(300);
   });
 
   casoDeBanco("a receber ignora cancelado e inclui o que já foi atendido sem pagar", async () => {
@@ -123,22 +123,42 @@ describe("caixa do salão", () => {
     expect(await repository.sumPendingRevenue()).toBe(200);
   });
 
-  casoDeBanco("pago adiantado é o que já entrou de atendimento que não aconteceu", async () => {
+  casoDeBanco("pago adiantado é o que já entrou de atendimento por vir", async () => {
     await criar({ status: "confirmed", paymentStatus: "paid", paymentMethod: "pix" }); // 100
     await criar({ status: "pending", paymentStatus: "paid", paymentMethod: "card" }); // 100
-    await criar({ status: "completed", paymentStatus: "paid" }); // já é "recebido"
+    await criar({ status: "completed", paymentStatus: "paid" }); // já atendido
     await criar({ status: "confirmed", paymentStatus: "pending" }); // nada entrou
     await criar({ status: "cancelled", paymentStatus: "paid" }); // devolução, não caixa
 
     expect(await repository.sumPrepaidRevenue()).toBe(200);
   });
 
-  // A regra que faltava: as três divisões não se sobrepõem e, juntas, cobrem
-  // todo valor não cancelado. Antes o pago adiantado não estava em nenhuma, e
-  // o dinheiro desaparecia do painel.
-  casoDeBanco("as três divisões não se sobrepõem e não deixam valor de fora", async () => {
+  // Horário que já passou e não foi concluído: o dinheiro entrou (está no
+  // recebido), mas não é "adiantado" — o atendimento já aconteceu.
+  casoDeBanco("pagamento de horário que já passou não conta como adiantado", async () => {
+    await prisma.appointment.create({
+      data: {
+        clientId: cliente.id,
+        employeeId: funcionaria.id,
+        status: "confirmed",
+        paymentStatus: "paid",
+        paymentMethod: "pix",
+        scheduledAt: new Date("2020-01-10T10:00:00.000Z"),
+        durationMinutes: 30,
+        price: "70.00",
+        services: { create: [{ serviceId: servico.id, durationMinutes: 30, price: "70.00" }] },
+      },
+    });
+
+    expect(await repository.sumReceivedRevenue()).toBe(70);
+    expect(await repository.sumPrepaidRevenue()).toBe(0);
+  });
+
+  // Recebido e a receber não se sobrepõem e, juntos, cobrem todo valor não
+  // cancelado. O pago adiantado é uma parte do recebido.
+  casoDeBanco("recebido + a receber cobrem tudo; adiantado está dentro do recebido", async () => {
     await criar({ status: "completed", paymentStatus: "paid" }); // recebido
-    await criar({ status: "confirmed", paymentStatus: "paid" }); // pago adiantado
+    await criar({ status: "confirmed", paymentStatus: "paid" }); // recebido e adiantado
     await criar({ status: "completed", paymentStatus: "pending" }); // a receber
     await criar({ status: "confirmed", paymentStatus: "pending" }); // a receber
     await criar({ status: "cancelled", paymentStatus: "paid" }); // fora de tudo
@@ -147,18 +167,18 @@ describe("caixa do salão", () => {
     const adiantado = await repository.sumPrepaidRevenue();
     const aReceber = await repository.sumPendingRevenue();
 
-    expect(recebido).toBe(100);
+    expect(recebido).toBe(200);
     expect(adiantado).toBe(100);
     expect(aReceber).toBe(200);
     // 500 criados, 100 cancelados: o resto tem de estar classificado.
-    expect(recebido + adiantado + aReceber).toBe(400);
+    expect(recebido + aReceber).toBe(400);
   });
 
-  casoDeBanco("atender quem pagou adiantado move o valor para 'recebido'", async () => {
+  casoDeBanco("atender quem pagou adiantado tira o valor do adiantado, não do recebido", async () => {
     const appt = await criar({ status: "confirmed", paymentStatus: "paid", price: "80.00" });
 
     expect(await repository.sumPrepaidRevenue()).toBe(80);
-    expect(await repository.sumReceivedRevenue()).toBe(0);
+    expect(await repository.sumReceivedRevenue()).toBe(80);
 
     await prisma.appointment.update({ where: { id: appt.id }, data: { status: "completed" } });
 
@@ -176,6 +196,21 @@ describe("caixa do salão", () => {
 
     expect(await repository.sumReceivedRevenue()).toBe(150);
     expect(await repository.sumPendingRevenue()).toBe(0);
+  });
+
+  casoDeBanco("a devolver é o cancelado que já tinha sido pago, até registrar o estorno", async () => {
+    const appt = await criar({ status: "cancelled", paymentStatus: "paid", paymentMethod: "pix", price: "90.00" });
+    await criar({ status: "cancelled", paymentStatus: "pending" }); // não pagou: nada a devolver
+    await criar({ status: "completed", paymentStatus: "paid" }); // recebido, não devolve
+
+    expect(await repository.sumRefundDue()).toBe(90);
+    expect(await repository.sumReceivedRevenue()).toBe(100);
+
+    const estornado = await repository.markAppointmentRefunded(appt.id);
+
+    expect(estornado.paymentStatus).toBe("refunded");
+    expect(await repository.sumRefundDue()).toBe(0);
+    expect(await repository.sumReceivedRevenue()).toBe(100);
   });
 
   casoDeBanco("base sem agendamento soma zero, não null", async () => {

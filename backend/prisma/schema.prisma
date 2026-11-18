@@ -37,10 +37,6 @@ model User {
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
 
-  // Reset de senha (FASE 4): token de uso único, nunca armazenado em texto puro.
-  passwordResetTokenHash  String?
-  passwordResetExpiresAt DateTime?
-
   avatarUrl String?
 
   // Preferência de contato exibida em /profile/preferences.

@@ -4,13 +4,10 @@ import BusinessHoursCard from "../components/BusinessHoursCard";
 import DangerZoneCard from "../components/DangerZoneCard";
 import UnsavedChangesToast from "../../../shared/components/UnsavedChangesToast";
 import { getSettings, updateSettings, uploadSalonLogo } from "../../../shared/services/settingsService";
-import { settingsTabs } from "../data/mockAdminSettings";
 import { useToast } from "../../../shared/contexts/useToast";
 import { useAuth } from "../../../shared/contexts/useAuth";
 import { ROLES } from "../../../shared/constants/roles";
 import { getErrorMessage } from "../../../shared/utils/errorMessage";
-
-const PLACEHOLDER_TABS = settingsTabs.filter((tab) => tab.id !== "salao" && tab.id !== "hours");
 
 export default function AdminSettingsPage() {
   const toast = useToast();
@@ -111,15 +108,6 @@ export default function AdminSettingsPage() {
           }}
         />
       )}
-
-      {PLACEHOLDER_TABS.map((tab) => (
-        <p
-          key={tab.id}
-          className="rounded-lg border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500"
-        >
-          {tab.label} em breve.
-        </p>
-      ))}
 
       <UnsavedChangesToast
         visible={dirty}

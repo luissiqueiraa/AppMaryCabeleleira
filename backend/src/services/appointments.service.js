@@ -2,11 +2,13 @@ import { Prisma } from "@prisma/client";
 import { env } from "../config/env.js";
 import { AppError } from "../utils/AppError.js";
 import { recordAuditLog } from "../utils/auditLogger.js";
+import { salonDayStart, nextIsoDate, formatSalonDateTime } from "../utils/salonTime.js";
 import * as appointmentsRepository from "../repositories/appointments.repository.js";
 import * as servicesRepository from "../repositories/services.repository.js";
 import * as employeesRepository from "../repositories/employees.repository.js";
 import * as settingsRepository from "../repositories/settings.repository.js";
 import * as notificationsService from "./notifications.service.js";
+import { publishAppointmentChange } from "../utils/appointmentEvents.js";
 
 // Agendamento que ainda ocupa a agenda e pode ser cancelado. "pending" entra
 // aqui porque, se existir (dado legado ou futura etapa de aprovação), precisa
@@ -18,6 +20,24 @@ const LEGAL_TRANSITIONS = {
   pending: ["confirmed", "completed", "cancelled"],
   confirmed: ["completed", "cancelled"],
 };
+
+// Avisa o painel do admin, em tempo real, que este agendamento mudou. Leva só
+// o necessário para a tela decidir recarregar e mostrar um aviso curto; os
+// dados completos ela busca de novo pela API, com as permissões de sempre.
+function announce(action, appointment, actorId) {
+  publishAppointmentChange({
+    action,
+    appointmentId: appointment.id,
+    status: appointment.status,
+    paymentStatus: appointment.paymentStatus,
+    clientName: appointment.client?.fullName ?? null,
+    scheduledAt: appointment.scheduledAt,
+    actorId: actorId ?? null,
+  });
+}
+
+const formatBRL = (value) =>
+  Number(value).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 // Nome dos serviços em uma linha só, para notificações e mensagens.
 function describeServices(appointment) {
@@ -60,15 +80,16 @@ function toAppointmentDto(appointment) {
   };
 }
 
+// Datas chegam como "YYYY-MM-DD" e são dias do salão, não do servidor. "to"
+// é inclusivo, como lê quem filtra "de 17/11 até 17/11": o limite superior é
+// a meia-noite do dia SEGUINTE. Exclusivo, um filtro de um dia só voltava vazio.
 function resolveDateRange({ date, from, to }) {
   if (date) {
-    const dayStart = new Date(`${date}T00:00:00`);
-    const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
-    return { dateFrom: dayStart, dateTo: dayEnd };
+    return { dateFrom: salonDayStart(date), dateTo: salonDayStart(nextIsoDate(date)) };
   }
   return {
-    dateFrom: from ? new Date(`${from}T00:00:00`) : undefined,
-    dateTo: to ? new Date(`${to}T00:00:00`) : undefined,
+    dateFrom: from ? salonDayStart(from) : undefined,
+    dateTo: to ? salonDayStart(nextIsoDate(to)) : undefined,
   };
 }
 
@@ -102,16 +123,18 @@ function salonWallClock(date) {
   return { weekdayId: WEEKDAY_IDS[weekdayIndex], minutes: hour * 60 + Number(value("minute")) };
 }
 
-// Caixa do salão: o que entrou (atendido e pago) e o que ainda falta entrar.
+// Caixa do salão: o que entrou (pago), a parte disso que é de horário futuro
+// e o que ainda falta entrar.
 // As funções do repositório aceitam intervalo, caso um dia o painel queira
 // recortar por período.
 export async function getRevenueSummary() {
-  const [total, prepaid, pending] = await Promise.all([
+  const [total, prepaid, pending, refundDue] = await Promise.all([
     appointmentsRepository.sumReceivedRevenue(),
     appointmentsRepository.sumPrepaidRevenue(),
     appointmentsRepository.sumPendingRevenue(),
+    appointmentsRepository.sumRefundDue(),
   ]);
-  return { total, prepaid, pending };
+  return { total, prepaid, pending, refundDue };
 }
 
 // O frontend só oferece horários dentro do expediente, mas quem chama a API
@@ -163,17 +186,17 @@ async function assertNoConflict({ employeeId, scheduledAt, durationMinutes, excl
   // Criar e remarcar exigem profissional, e a FK é Restrict: só dado legado
   // chega aqui sem employeeId, e esse não ocupa a agenda de ninguém.
   if (!employeeId) return;
-  const dayStart = new Date(scheduledAt);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+  const newEnd = new Date(scheduledAt.getTime() + durationMinutes * 60000);
 
+  // Janela pelo instante, e não pelo "dia": qualquer agendamento que comece até
+  // 24h antes pode invadir o novo horário. Recortar pelo dia dependia do fuso
+  // do servidor e deixava escapar atendimento que atravessa a meia-noite.
   const candidates = await appointmentsRepository.findActiveAppointmentsForEmployeeOnDay({
     employeeId,
-    dayStart,
-    dayEnd,
+    dayStart: new Date(scheduledAt.getTime() - 24 * 60 * 60 * 1000),
+    dayEnd: newEnd,
     excludeId,
   });
-  const newEnd = new Date(scheduledAt.getTime() + durationMinutes * 60000);
   if (candidates.some((candidate) => overlaps(candidate, scheduledAt, newEnd))) {
     throw new AppError(UNAVAILABLE_MESSAGE, 409);
   }
@@ -225,8 +248,9 @@ export async function listAppointments(actor, query) {
 // listAppointments (que restringe um cliente comum aos próprios agendamentos)
 // — só devolve os intervalos ocupados, sem nome/telefone/serviço de ninguém.
 export async function getAvailability({ employeeId, date, excludeId }) {
-  const dayStart = new Date(`${date}T00:00:00`);
-  const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000);
+  // Dia do salão: a grade de horários da tela é hora de parede do salão.
+  const dayStart = salonDayStart(date);
+  const dayEnd = salonDayStart(nextIsoDate(date));
   const appointments = await appointmentsRepository.findActiveAppointmentsForEmployeeOnDay({
     employeeId,
     dayStart,
@@ -322,10 +346,11 @@ export async function createAppointment({ serviceIds, employeeId, scheduledAt, n
     entityId: appointment.id,
     req,
   });
+  announce("created", appointment, req.user.id);
   await notificationsService.notifyUser(appointment.clientId, {
     type: "confirmation",
     title: "Agendamento confirmado",
-    description: `${describeServices(appointment)} confirmado para ${appointment.scheduledAt.toLocaleDateString("pt-BR")}.`,
+    description: `${describeServices(appointment)} confirmado para ${formatSalonDateTime(appointment.scheduledAt)}.`,
   });
   return toAppointmentDto(appointment);
 }
@@ -365,6 +390,7 @@ export async function createAppointmentForPayment(payment) {
     })
   );
 
+  announce("created", appointment, payment.clientId);
   return appointment;
 }
 
@@ -411,10 +437,11 @@ export async function rescheduleAppointment(id, { scheduledAt, employeeId }, req
     entityId: id,
     req,
   });
+  announce("rescheduled", updated, req.user.id);
   await notificationsService.notifyUser(updated.clientId, {
     type: "update",
     title: "Agendamento remarcado",
-    description: `${describeServices(updated)} remarcado para ${updated.scheduledAt.toLocaleDateString("pt-BR")}.`,
+    description: `${describeServices(updated)} remarcado para ${formatSalonDateTime(updated.scheduledAt)}.`,
   });
   return toAppointmentDto(updated);
 }
@@ -436,10 +463,11 @@ export async function cancelAppointment(id, req) {
     entityId: id,
     req,
   });
+  announce("cancelled", updated, req.user.id);
   await notificationsService.notifyUser(updated.clientId, {
     type: "update",
     title: "Agendamento cancelado",
-    description: `${describeServices(updated)} de ${updated.scheduledAt.toLocaleDateString("pt-BR")} foi cancelado.`,
+    description: `${describeServices(updated)} de ${formatSalonDateTime(updated.scheduledAt)} foi cancelado.`,
   });
   return toAppointmentDto(updated);
 }
@@ -470,6 +498,7 @@ export async function updateAppointmentPayment(id, { paymentStatus }, req) {
     entityId: id,
     req,
   });
+  announce(paymentStatus === "paid" ? "payment_received" : "payment_reverted", updated, req.user.id);
 
   if (paymentStatus === "paid") {
     await notificationsService.notifyUser(updated.clientId, {
@@ -482,6 +511,36 @@ export async function updateAppointmentPayment(id, { paymentStatus }, req) {
   return toAppointmentDto(updated);
 }
 
+// Estorno de atendimento cancelado que já tinha sido pago. A devolução em si
+// é combinada com a cliente (WhatsApp) e feita fora do sistema — no Mercado
+// Pago, por pix ou em dinheiro. Aqui a equipe só registra que devolveu: o
+// valor sai de "a devolver" e a cliente deixa de ver o aviso de estorno.
+export async function markAppointmentRefunded(id, req) {
+  const appointment = await appointmentsRepository.findAppointmentById(id);
+  if (!appointment) {
+    throw new AppError("Appointment not found", 404);
+  }
+  if (appointment.status !== "cancelled" || appointment.paymentStatus !== "paid") {
+    throw new AppError("Only paid appointments that were cancelled can be refunded", 422);
+  }
+
+  const updated = await appointmentsRepository.markAppointmentRefunded(id);
+  await recordAuditLog({
+    userId: req.user.id,
+    action: "appointment.refunded",
+    entity: "Appointment",
+    entityId: id,
+    req,
+  });
+  announce("refunded", updated, req.user.id);
+  await notificationsService.notifyUser(updated.clientId, {
+    type: "update",
+    title: "Estorno registrado",
+    description: `O salão registrou a devolução de ${formatBRL(updated.price)} de ${describeServices(updated)}.`,
+  });
+  return toAppointmentDto(updated);
+}
+
 // Exclusão é para erro de lançamento — agendamento que nunca deveria existir.
 // Para "a cliente desistiu" o caminho é cancelar, que preserva o histórico.
 // A diferença importa porque excluído sai do caixa e das listas.
@@ -491,12 +550,10 @@ export async function deleteAppointment(id, req) {
     throw new AppError("Appointment not found", 404);
   }
 
-  // Pix e cartão passaram por cobrança real: apagar esconderia dinheiro que
-  // entrou, e o estorno é feito no provedor, não aqui.
-  if (appointment.paymentMethod !== "on_site" && appointment.paymentStatus === "paid") {
-    throw new AppError("Cannot delete an appointment paid online", 422);
-  }
-
+  // Vale para qualquer situação, inclusive concluído e pago (também por pix ou
+  // cartão): é decisão da admin corrigir o lançamento. Excluir não devolve
+  // dinheiro — estorno online é feito no painel do Mercado Pago — e o registro
+  // continua no banco (soft delete) e no log de auditoria.
   await appointmentsRepository.softDeleteAppointment(id);
   await recordAuditLog({
     userId: req.user.id,
@@ -505,6 +562,7 @@ export async function deleteAppointment(id, req) {
     entityId: id,
     req,
   });
+  announce("deleted", appointment, req.user.id);
 }
 
 export async function updateAppointmentStatus(id, { status }, req) {
@@ -526,12 +584,13 @@ export async function updateAppointmentStatus(id, { status }, req) {
     entityId: id,
     req,
   });
+  announce(status === "cancelled" ? "cancelled" : status === "completed" ? "completed" : "status_changed", updated, req.user.id);
 
   if (status === "cancelled") {
     await notificationsService.notifyUser(updated.clientId, {
       type: "update",
       title: "Agendamento cancelado",
-      description: `${describeServices(updated)} de ${updated.scheduledAt.toLocaleDateString("pt-BR")} foi cancelado.`,
+      description: `${describeServices(updated)} de ${formatSalonDateTime(updated.scheduledAt)} foi cancelado.`,
     });
   }
 

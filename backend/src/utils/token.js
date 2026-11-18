@@ -33,9 +33,3 @@ export function generateRefreshToken() {
 export function hashToken(rawToken) {
   return crypto.createHash("sha256").update(rawToken).digest("hex");
 }
-
-// Token aleatório de uso geral — hoje é o que vai no link de redefinição de
-// senha (guardado no banco só como hash, igual ao refresh token).
-export function generateRandomToken() {
-  return crypto.randomBytes(32).toString("hex");
-}

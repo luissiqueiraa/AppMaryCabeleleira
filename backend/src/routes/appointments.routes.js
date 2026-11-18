@@ -14,6 +14,7 @@ import {
   updateAppointmentStatusSchema,
   updateAppointmentPaymentSchema,
   deleteAppointmentSchema,
+  refundAppointmentSchema,
   availabilitySchema,
 } from "../validators/appointments.validator.js";
 
@@ -23,6 +24,10 @@ router.use(authenticate);
 const getAppointmentOwnerId = (req) => appointmentsService.getAppointmentOwnerId(req.params.id);
 
 router.get("/", validateRequest(listAppointmentsSchema), appointmentsController.listAppointments);
+
+// Mudanças de agendamento em tempo real para o painel (SSE). Só para a equipe:
+// o evento leva nome de cliente. Antes de "/:id", como availability.
+router.get("/events", authorize("manage_appointments"), appointmentsController.streamAppointmentEvents);
 
 // Antes de "/:id" — senão "availability" seria interpretado como um id.
 router.get("/availability", validateRequest(availabilitySchema), appointmentsController.getAvailability);
@@ -71,6 +76,15 @@ router.patch(
   authorize("manage_appointments"),
   validateRequest(updateAppointmentPaymentSchema),
   appointmentsController.updateAppointmentPayment
+);
+
+// Registro do estorno de atendimento cancelado que já estava pago. A devolução
+// é combinada com a cliente e feita fora do sistema; aqui só fica anotado.
+router.patch(
+  "/:id/refund",
+  authorize("manage_appointments"),
+  validateRequest(refundAppointmentSchema),
+  appointmentsController.markAppointmentRefunded
 );
 
 // Excluir é mais pesado que cancelar: tira o agendamento das listas e do

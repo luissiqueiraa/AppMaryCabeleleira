@@ -146,6 +146,7 @@ export default function BookingConfirmationModal({
               onChange={(event) => onNotesChange(event.target.value)}
               placeholder="Ex: Não precisa lavar, etc.."
               rows={3}
+              maxLength={500}
               className="mt-1.5 w-full rounded-lg border border-gray-200 p-3 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus-visible:border-pink-600 focus-visible:ring-2 focus-visible:ring-pink-100"
             />
           </div>

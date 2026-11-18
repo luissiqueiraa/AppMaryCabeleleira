@@ -4,6 +4,7 @@ import PublicLayout from "../../layouts/PublicLayout";
 import FocusLayout from "../../layouts/FocusLayout";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import PrivateRoute from "./PrivateRoute";
+import StaffLiveUpdates from "../../features/admin/realtime/StaffLiveUpdates";
 import { ROLES } from "../../shared/constants/roles";
 import LoadingScreen from "../../shared/components/LoadingScreen";
 
@@ -79,19 +80,23 @@ export default function AppRoutes() {
           </Route>
         </Route>
 
+        {/* Telas da equipe. StaffLiveUpdates fica acima dos dois grupos para a
+            conexão de tempo real ser uma só e não cair ao trocar de página. */}
         <Route element={<PrivateRoute allowedRoles={[ROLES.OWNER, ROLES.ADMIN, ROLES.EMPLOYEE]} />}>
-          <Route element={<DashboardLayout />}>
-            <Route path="/admin" element={<AdminDashboardPage />} />
-            <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
-            <Route path="/admin/services" element={<AdminServicesPage />} />
-            <Route path="/admin/clients" element={<ClientsPage />} />
-          </Route>
-        </Route>
+          <Route element={<StaffLiveUpdates />}>
+            <Route element={<DashboardLayout />}>
+              <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/appointments" element={<AdminAppointmentsPage />} />
+              <Route path="/admin/services" element={<AdminServicesPage />} />
+              <Route path="/admin/clients" element={<ClientsPage />} />
+            </Route>
 
-        <Route element={<PrivateRoute allowedRoles={[ROLES.OWNER, ROLES.ADMIN]} />}>
-          <Route element={<DashboardLayout />}>
-            <Route path="/admin/employees" element={<EmployeesPage />} />
-            <Route path="/admin/settings" element={<AdminSettingsPage />} />
+            <Route element={<PrivateRoute allowedRoles={[ROLES.OWNER, ROLES.ADMIN]} />}>
+              <Route element={<DashboardLayout />}>
+                <Route path="/admin/employees" element={<EmployeesPage />} />
+                <Route path="/admin/settings" element={<AdminSettingsPage />} />
+              </Route>
+            </Route>
           </Route>
         </Route>
 

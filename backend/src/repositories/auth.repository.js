@@ -44,8 +44,7 @@ export function findUserByFirebaseUid(firebaseUid) {
   });
 }
 
-// Conta nova vinda do Google: sem passwordHash (a pessoa só entra pelo Google
-// até definir uma senha por "esqueci minha senha").
+// Conta nova vinda do Google: sem passwordHash — a pessoa entra só pelo Google.
 export function createUserFromGoogle({ fullName, email, firebaseUid, avatarUrl, roleId }) {
   return prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
@@ -98,19 +97,6 @@ export function revokeAllRefreshTokensForUser(userId) {
   });
 }
 
-export function setPasswordResetToken(userId, { tokenHash, expiresAt }) {
-  return prisma.user.update({
-    where: { id: userId },
-    data: { passwordResetTokenHash: tokenHash, passwordResetExpiresAt: expiresAt },
-  });
-}
-
-export function findUserByResetTokenHash(tokenHash) {
-  return prisma.user.findFirst({
-    where: { passwordResetTokenHash: tokenHash, deletedAt: null },
-  });
-}
-
 export function updateUserAvatar(userId, avatarUrl) {
   return prisma.user.update({ where: { id: userId }, data: { avatarUrl }, include: { role: true } });
 }
@@ -123,13 +109,11 @@ export function softDeleteUser(userId) {
   return prisma.user.update({ where: { id: userId }, data: { deletedAt: new Date() } });
 }
 
-export function resetPasswordAndClearToken(userId, passwordHash) {
+export function updatePassword(userId, passwordHash) {
   return prisma.user.update({
     where: { id: userId },
     data: {
       passwordHash,
-      passwordResetTokenHash: null,
-      passwordResetExpiresAt: null,
       failedLoginAttempts: 0,
       lockedUntil: null,
     },

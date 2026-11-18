@@ -1,8 +1,15 @@
-import { useEffect, useState } from "react";
-import { FiSearch, FiChevronLeft, FiChevronRight, FiDollarSign, FiTrash2, FiSlash, FiCalendar } from "react-icons/fi";
+import { useEffect, useRef, useState } from "react";
+import { FiSearch, FiChevronLeft, FiChevronRight, FiDollarSign, FiTrash2, FiSlash, FiCalendar, FiCheckCircle, FiRotateCcw } from "react-icons/fi";
 import Avatar from "../../../shared/components/Avatar";
+import RefundModal from "./RefundModal";
+import AppointmentNote from "../../../shared/components/AppointmentNote";
 import { listAppointments, cancelAppointment } from "../../dashboard/services/appointmentService";
-import { updateAppointmentPayment, deleteAppointment } from "../services/adminAppointmentService";
+import {
+  updateAppointmentPayment,
+  refundAppointment,
+  updateAppointmentStatus,
+  deleteAppointment,
+} from "../services/adminAppointmentService";
 import OverflowMenu from "../../../shared/components/OverflowMenu";
 import ConfirmationModal from "../../../shared/components/ConfirmationModal";
 import { useAuth } from "../../../shared/contexts/useAuth";
@@ -44,10 +51,37 @@ const PAYMENT_METHOD_LABEL = { pix: "Pix", card: "Cartão", on_site: "No salão"
 // Pago x a receber importa para o caixa: só o que está pago entra em
 // "Recebido". Pix e cartão nascem pagos (o provedor confirma); o presencial
 // depende da equipe dar baixa — então ali a etiqueta é um botão.
-function PaymentCell({ item, isUpdating, onConfirm, onRevert }) {
+function PaymentCell({ item, isUpdating, onConfirm, onRevert, onRefund }) {
   const label = PAYMENT_METHOD_LABEL[item.paymentMethod] ?? item.paymentMethod;
   const paid = item.paymentStatus === "paid";
-  const podeMexer = item.paymentMethod === "on_site" && item.status !== "cancelled";
+  const cancelled = item.status === "cancelled";
+  const podeMexer = item.paymentMethod === "on_site" && !cancelled;
+
+  // Cancelado depois de pago: o dinheiro precisa voltar para a cliente.
+  if (cancelled && paid) {
+    return (
+      <button
+        type="button"
+        onClick={() => onRefund(item)}
+        className="inline-flex shrink-0 items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-semibold whitespace-nowrap text-rose-700 hover:bg-rose-100"
+      >
+        <FiRotateCcw size={12} aria-hidden="true" />
+        Estornar valor
+      </button>
+    );
+  }
+
+  if (item.paymentStatus === "refunded") {
+    return (
+      <span className="whitespace-nowrap text-xs text-gray-500">
+        {label} · <span className="font-semibold text-gray-600">estornado</span>
+      </span>
+    );
+  }
+
+  if (cancelled) {
+    return <span className="whitespace-nowrap text-xs text-gray-400">{label} · sem cobrança</span>;
+  }
 
   if (paid) {
     return (
@@ -89,13 +123,15 @@ function PaymentCell({ item, isUpdating, onConfirm, onRevert }) {
   );
 }
 
-export default function AppointmentsHistory({ onPaymentChange, onRequestReschedule }) {
+export default function AppointmentsHistory({ reloadKey = 0, onPaymentChange, onRequestReschedule }) {
   const toast = useToast();
   const { user } = useAuth();
   const [updatingId, setUpdatingId] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [cancelTarget, setCancelTarget] = useState(null);
+  const [refundTarget, setRefundTarget] = useState(null);
+  const [isRefunding, setIsRefunding] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   // Excluir tira o agendamento das listas e do caixa: fica com admin e
   // proprietária, a mesma regra que o backend aplica.
@@ -109,10 +145,17 @@ export default function AppointmentsHistory({ onPaymentChange, onRequestReschedu
   const [pagination, setPagination] = useState(null);
   const [loadStatus, setLoadStatus] = useState("loading");
 
+  // Recarga pedida de fora (mudança em tempo real, baixa no painel) troca os
+  // dados sem mostrar "Carregando..." nem voltar de página; mudar filtro ou
+  // página continua mostrando o carregamento, como antes.
+  const lastReloadKeyRef = useRef(reloadKey);
+
   useEffect(() => {
     let isMounted = true;
+    const silent = lastReloadKeyRef.current !== reloadKey;
+    lastReloadKeyRef.current = reloadKey;
     const timeoutId = setTimeout(() => {
-      setLoadStatus("loading");
+      if (!silent) setLoadStatus("loading");
       listAppointments({
         status: status || undefined,
         page,
@@ -136,7 +179,7 @@ export default function AppointmentsHistory({ onPaymentChange, onRequestReschedu
       isMounted = false;
       clearTimeout(timeoutId);
     };
-  }, [search, status, dateFrom, dateTo, page]);
+  }, [search, status, dateFrom, dateTo, page, reloadKey]);
 
   const hasFilters = Boolean(search.trim() || status || dateFrom || dateTo);
 
@@ -155,6 +198,40 @@ export default function AppointmentsHistory({ onPaymentChange, onRequestReschedu
       toast.error(getErrorMessage(err, "Não foi possível atualizar o pagamento agora."));
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  // Concluir pelo histórico: é o único lugar em que um horário que já passou
+  // continua à vista. Sem isto o atendimento ficava "agendado" para sempre,
+  // porque a lista de próximos do painel só mostra o que ainda vai acontecer.
+  async function completeAppointment(item) {
+    setUpdatingId(item.id);
+    try {
+      const { data } = await updateAppointmentStatus(item.id, "completed");
+      setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, status: data.status } : row)));
+      toast.success("Atendimento concluído.");
+      onPaymentChange?.();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Não foi possível concluir o atendimento agora."));
+    } finally {
+      setUpdatingId(null);
+    }
+  }
+
+  // A devolução é feita fora do sistema; aqui só fica registrada, e a cliente
+  // deixa de ver o aviso de estorno.
+  async function markRefunded(item) {
+    setIsRefunding(true);
+    try {
+      const { data } = await refundAppointment(item.id);
+      setItems((prev) => prev.map((row) => (row.id === item.id ? { ...row, paymentStatus: data.paymentStatus } : row)));
+      toast.success("Estorno registrado.");
+      setRefundTarget(null);
+      onPaymentChange?.();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Não foi possível registrar o estorno agora."));
+    } finally {
+      setIsRefunding(false);
     }
   }
 
@@ -197,6 +274,9 @@ export default function AppointmentsHistory({ onPaymentChange, onRequestReschedu
     const podeCancelar = ["pending", "confirmed"].includes(item.status);
     const podeRemarcar = onRequestReschedule && podeCancelar;
     const actions = [
+      ...(podeCancelar
+        ? [{ label: "Concluir atendimento", icon: FiCheckCircle, onClick: () => completeAppointment(item) }]
+        : []),
       ...(podeRemarcar
         ? [{ label: "Alterar data e horário", icon: FiCalendar, onClick: () => onRequestReschedule(item) }]
         : []),
@@ -223,6 +303,7 @@ export default function AppointmentsHistory({ onPaymentChange, onRequestReschedu
     isUpdating: updatingId === item.id,
     onConfirm: (row) => changePayment(row, "paid"),
     onRevert: (row) => changePayment(row, "pending"),
+    onRefund: setRefundTarget,
   });
 
   return (
@@ -327,6 +408,7 @@ export default function AppointmentsHistory({ onPaymentChange, onRequestReschedu
                   <span className="truncate">{formatServiceNames(item.services)}</span>
                   <span className="shrink-0">{item.employee?.fullName ?? "Sem profissional"}</span>
                 </div>
+                <AppointmentNote notes={item.notes} className="mt-2" />
                 <div className="mt-2 flex items-center justify-between gap-2">
                   <StatusPill status={item.status} />
                   <div className="flex items-center gap-1">
@@ -363,7 +445,10 @@ export default function AppointmentsHistory({ onPaymentChange, onRequestReschedu
                     <td className="py-4 pr-4 align-middle">
                       <div className="flex items-center gap-3">
                         <Avatar name={item.client.fullName} avatarUrl={item.client.avatarUrl} size={32} />
-                        <p className="font-semibold whitespace-nowrap text-gray-900">{item.client.fullName}</p>
+                        <div className="min-w-0">
+                          <p className="font-semibold whitespace-nowrap text-gray-900">{item.client.fullName}</p>
+                          <AppointmentNote notes={item.notes} compact />
+                        </div>
                       </div>
                     </td>
                     <td className="py-4 pr-4 align-middle text-gray-600">{formatServiceNames(item.services)}</td>
@@ -421,7 +506,15 @@ export default function AppointmentsHistory({ onPaymentChange, onRequestReschedu
         title="Excluir este agendamento?"
         description={
           deleteTarget
-            ? `${formatServiceNames(deleteTarget.services)} de ${deleteTarget.client.fullName} em ${formatDateOnly(deleteTarget.scheduledAt)}. Ele sai das listas e do caixa, e não dá para desfazer. Para um atendimento que a cliente desmarcou, use cancelar em vez de excluir.`
+            ? `${formatServiceNames(deleteTarget.services)} de ${deleteTarget.client.fullName} em ${formatDateOnly(deleteTarget.scheduledAt)}. Ele sai das listas e do caixa, e não dá para desfazer.${
+                deleteTarget.paymentStatus === "paid"
+                  ? ` O valor de ${formatBRL(deleteTarget.price)} já foi pago e deixa de aparecer no recebido${
+                      deleteTarget.paymentMethod !== "on_site"
+                        ? "; excluir não devolve o dinheiro à cliente — o estorno é feito no Mercado Pago"
+                        : ""
+                    }.`
+                  : " Para um atendimento que a cliente desmarcou, use cancelar em vez de excluir."
+              }`
             : ""
         }
         confirmLabel="Sim, excluir"
@@ -446,6 +539,12 @@ export default function AppointmentsHistory({ onPaymentChange, onRequestReschedu
         isLoading={isCancelling}
         onConfirm={confirmCancel}
         onCancel={() => setCancelTarget(null)}
+      />
+      <RefundModal
+        appointment={refundTarget}
+        isSaving={isRefunding}
+        onMarkRefunded={markRefunded}
+        onClose={() => setRefundTarget(null)}
       />
     </div>
   );

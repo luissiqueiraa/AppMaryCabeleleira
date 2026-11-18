@@ -7,8 +7,6 @@ import {
   registerSchema,
   loginSchema,
   googleLoginSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
   updateMeSchema,
   changeMyPasswordSchema,
 } from "../validators/auth.validator.js";
@@ -31,7 +29,5 @@ router.post(
 );
 router.delete("/me", authenticate, authController.deleteMe);
 router.patch("/me/avatar", authenticate, uploadAvatar, authController.updateMyAvatar);
-router.post("/forgot-password", validateRequest(forgotPasswordSchema), authController.forgotPassword);
-router.post("/reset-password", validateRequest(resetPasswordSchema), authController.resetPassword);
 
 export default router;

@@ -11,6 +11,7 @@ import { hourRangeForDay, findDayHours } from "../../appointments/utils/availabi
 import { formatFullDate, toLocalIsoDate as isoDate } from "../../../shared/utils/formatDate";
 import { formatServiceNames } from "../../../shared/utils/formatServices";
 import { useToast } from "../../../shared/contexts/useToast";
+import { useAppointmentChanges } from "../realtime/AppointmentEventsContext";
 import { getErrorMessage } from "../../../shared/utils/errorMessage";
 
 function addDays(iso, amount) {
@@ -31,6 +32,9 @@ export default function AdminAppointmentsPage() {
   const [detailTarget, setDetailTarget] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
   const [cancelTarget, setCancelTarget] = useState(null);
+
+  // Tempo real: a agenda do dia se atualiza quando qualquer agendamento muda.
+  useAppointmentChanges(() => setRefreshToken((n) => n + 1));
 
   useEffect(() => {
     let isMounted = true;

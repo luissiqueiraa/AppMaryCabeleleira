@@ -18,6 +18,8 @@ const KNOWN_MESSAGES = {
   "This user is already an employee": "Essa usuária já é funcionária.",
   "Employee not found": "Funcionária não encontrada.",
   "Client role is not configured": "A função de cliente não está configurada.",
+  "Only paid appointments that were cancelled can be refunded":
+    "Só dá para estornar um atendimento cancelado que já estava pago.",
   "Salon settings are not configured": "As configurações do salão ainda não foram definidas.",
   "Service not found": "Serviço não encontrado.",
   "Category not found": "Categoria não encontrada.",

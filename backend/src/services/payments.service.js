@@ -1,6 +1,7 @@
 import { env } from "../config/env.js";
 import { AppError } from "../utils/AppError.js";
 import { recordAuditLog } from "../utils/auditLogger.js";
+import { formatSalonDateTime } from "../utils/salonTime.js";
 import * as mercadoPago from "../config/mercadopago.js";
 import * as paymentsRepository from "../repositories/payments.repository.js";
 import * as authRepository from "../repositories/auth.repository.js";
@@ -215,7 +216,7 @@ async function confirmPayment(payment, providerPayment) {
     await notificationsService.notifyUser(payment.clientId, {
       type: "confirmation",
       title: "Pagamento confirmado",
-      description: `${payment.services.map((service) => service.name).join(" + ")} confirmado para ${payment.scheduledAt.toLocaleDateString("pt-BR")}.`,
+      description: `${payment.services.map((service) => service.name).join(" + ")} confirmado para ${formatSalonDateTime(payment.scheduledAt)}.`,
     });
 
     return updated;

@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { FiCalendar, FiClock } from "react-icons/fi";
 import StatusBadge from "../../../shared/components/StatusBadge";
+import AppointmentNote from "../../../shared/components/AppointmentNote";
+import RefundNotice from "./RefundNotice";
 
 export default function AppointmentCard({ appointment, onCancel }) {
   // Pendente também pode remarcar/cancelar: o horário já está ocupado por ela.
@@ -28,6 +30,10 @@ export default function AppointmentCard({ appointment, onCancel }) {
           {appointment.time}
         </span>
       </div>
+
+      <AppointmentNote notes={appointment.notes} label="Sua observação" className="mt-4" />
+
+      <RefundNotice appointment={appointment} className="mt-4" />
 
       <div className="mt-4 flex flex-wrap gap-3">
         <Link

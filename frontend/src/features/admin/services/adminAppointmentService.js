@@ -12,6 +12,13 @@ export async function updateAppointmentPayment(id, paymentStatus) {
   return data;
 }
 
+// Registra que o valor de um atendimento cancelado (e já pago) foi devolvido.
+// A devolução em si é combinada com a cliente e feita fora do sistema.
+export async function refundAppointment(id) {
+  const { data } = await api.patch(`/v1/appointments/${id}/refund`);
+  return data;
+}
+
 // Exclusão (soft delete no backend): para erro de lançamento. Cancelar é o
 // caminho de "a cliente desistiu", e preserva o histórico.
 export async function deleteAppointment(id) {

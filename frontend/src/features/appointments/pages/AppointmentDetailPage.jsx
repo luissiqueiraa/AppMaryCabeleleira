@@ -4,6 +4,8 @@ import { FiCalendar, FiClock } from "react-icons/fi";
 import StatusBadge from "../../../shared/components/StatusBadge";
 import { getAppointment } from "../../dashboard/services/appointmentService";
 import { mapAppointment } from "../../../shared/utils/mapAppointment";
+import AppointmentNote from "../../../shared/components/AppointmentNote";
+import RefundNotice from "../components/RefundNotice";
 
 export default function AppointmentDetailPage() {
   const { id } = useParams();
@@ -60,6 +62,10 @@ export default function AppointmentDetailPage() {
           {appointment.time}
         </p>
       </div>
+
+      <AppointmentNote notes={appointment.notes} label="Sua observação" className="mt-5" />
+
+      <RefundNotice appointment={appointment} className="mt-5" />
 
       <Link
         to="/appointments"

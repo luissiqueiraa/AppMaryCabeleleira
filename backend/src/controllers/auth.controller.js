@@ -164,26 +164,3 @@ export async function deleteMe(req, res, next) {
     next(error);
   }
 }
-
-// POST /auth/forgot-password — inicia a redefinição de senha gerando um token
-// temporário. Responde sempre igual, existindo a conta ou não, para não
-// permitir descobrir quais emails estão cadastrados.
-export async function forgotPassword(req, res, next) {
-  try {
-    const result = await authService.forgotPassword(req.body.email, req);
-    res.status(200).json({ success: true, data: result });
-  } catch (error) {
-    next(error);
-  }
-}
-
-// POST /auth/reset-password — conclui a redefinição: valida o token do link,
-// grava a senha nova e invalida o token (uso único) junto com as sessões ativas.
-export async function resetPassword(req, res, next) {
-  try {
-    const result = await authService.resetPassword(req.body, req);
-    res.status(200).json({ success: true, data: result });
-  } catch (error) {
-    next(error);
-  }
-}

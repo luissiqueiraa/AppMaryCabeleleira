@@ -4,6 +4,7 @@ import StatusBadge from "../../../shared/components/StatusBadge";
 import OverflowMenu from "../../../shared/components/OverflowMenu";
 import AutocompleteFilter from "../../../shared/components/AutocompleteFilter";
 import Avatar from "../../../shared/components/Avatar";
+import AppointmentNote from "../../../shared/components/AppointmentNote";
 import { avatarColorFor } from "../../../shared/utils/avatarColor";
 
 const FILTERS = [
@@ -112,6 +113,8 @@ export default function UpcomingAppointmentsTable({
                   <p className="shrink-0 font-semibold text-gray-900">{item.price}</p>
                 </div>
 
+                <AppointmentNote notes={item.notes} className="mt-3" />
+
                 {action && (
                   <button
                     type="button"
@@ -154,8 +157,9 @@ export default function UpcomingAppointmentsTable({
                     <td className="py-4 pr-4 align-middle">
                       <div className="flex items-center gap-3">
                         <Avatar name={item.client} avatarUrl={item.clientAvatarUrl} size={36} />
-                        <div>
+                        <div className="min-w-0">
                           <p className="font-semibold text-gray-900">{item.client}</p>
+                          <AppointmentNote notes={item.notes} compact />
                         </div>
                       </div>
                     </td>

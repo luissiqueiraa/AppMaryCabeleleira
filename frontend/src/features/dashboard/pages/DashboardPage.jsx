@@ -10,6 +10,8 @@ import { mapAppointment } from "../../../shared/utils/mapAppointment";
 import { useAuth } from "../../../shared/contexts/useAuth";
 import { useToast } from "../../../shared/contexts/useToast";
 import { getErrorMessage } from "../../../shared/utils/errorMessage";
+import RefundNotice from "../../appointments/components/RefundNotice";
+import { needsRefund } from "../../../shared/utils/whatsapp";
 
 const ACTIVE_STATUSES = ["confirmed"];
 
@@ -62,6 +64,10 @@ export default function DashboardPage() {
     .sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt))
     .slice(0, 3);
 
+  // Horários cancelados que já estavam pagos: o aviso de estorno fica no topo
+  // até o salão registrar a devolução.
+  const pendingRefunds = appointments.filter(needsRefund);
+
   async function handleConfirmCancel() {
     if (!nextAppointment) return;
     setIsCancelling(true);
@@ -91,6 +97,10 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
+      {pendingRefunds.map((appointment) => (
+        <RefundNotice key={appointment.id} appointment={appointment} />
+      ))}
+
       <WelcomeCard appointment={nextAppointment} onCancel={() => setCancelModalOpen(true)} />
 
       <div className="lg:hidden">
@@ -110,7 +120,9 @@ export default function DashboardPage() {
         title="Cancelar agendamento"
         description={
           nextAppointment
-            ? `Tem certeza que deseja cancelar ${nextAppointment.service} com ${nextAppointment.professional}?`
+            ? `Tem certeza que deseja cancelar ${nextAppointment.service} com ${nextAppointment.professional}?${
+                nextAppointment.paymentStatus === "paid" ? ` Você já pagou ${nextAppointment.price}: depois de cancelar, fale com o salão pelo WhatsApp para combinar o estorno.` : ""
+              }`
             : ""
         }
         confirmLabel="Sim, cancelar"

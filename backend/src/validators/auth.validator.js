@@ -24,19 +24,6 @@ export const googleLoginSchema = {
   }),
 };
 
-export const forgotPasswordSchema = {
-  body: z.object({
-    email: emailSchema,
-  }),
-};
-
-export const resetPasswordSchema = {
-  body: z.object({
-    token: z.string().min(1, "Token is required"),
-    newPassword: passwordSchema,
-  }),
-};
-
 export const updateMeSchema = {
   body: z.object({
     fullName: z.string().trim().min(2).max(120).optional(),

@@ -3,6 +3,7 @@ import { FiX, FiClock, FiPhone } from "react-icons/fi";
 import StatusBadge from "../../../shared/components/StatusBadge";
 import { formatFullDate, formatTime } from "../../../shared/utils/formatDate";
 import { formatBRL } from "../../../shared/utils/formatCurrency";
+import AppointmentNote from "../../../shared/components/AppointmentNote";
 
 // Pendente (dado legado) precisa de saída na tela: confirmar primeiro,
 // concluir depois.
@@ -98,12 +99,7 @@ export default function AppointmentDetailModal({
             <p className="font-semibold text-gray-900">{formatBRL(appointment.price)}</p>
           </div>
 
-          {appointment.notes && (
-            <div className="rounded-lg border border-gray-100 p-3">
-              <p className="text-xs text-gray-400">Observação</p>
-              <p className="text-sm text-gray-700">{appointment.notes}</p>
-            </div>
-          )}
+          <AppointmentNote notes={appointment.notes} />
 
           {action && (
             <button

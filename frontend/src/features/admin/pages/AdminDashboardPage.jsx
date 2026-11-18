@@ -13,6 +13,7 @@ import { formatBRL } from "../../../shared/utils/formatCurrency";
 import { toLocalIsoDate as isoDate } from "../../../shared/utils/formatDate";
 import { useToast } from "../../../shared/contexts/useToast";
 import { getErrorMessage } from "../../../shared/utils/errorMessage";
+import { useAppointmentChanges } from "../realtime/AppointmentEventsContext";
 
 function startOfDay(date) {
   const copy = new Date(date);
@@ -34,6 +35,11 @@ export default function AdminDashboardPage() {
   const { user } = useAuth();
   // Mesma regra do backend: funcionária cancela, não apaga.
   const canDelete = [ROLES.OWNER, ROLES.ADMIN].includes(user?.role?.name);
+
+  // Tempo real: qualquer mudança de agendamento (de cliente ou colega)
+  // recarrega cards, histórico e próximos — sem "Carregando...", a tela só
+  // troca os dados.
+  useAppointmentChanges(() => setRefreshToken((n) => n + 1));
 
   useEffect(() => {
     let isMounted = true;
@@ -119,29 +125,43 @@ export default function AdminDashboardPage() {
   const todayAppointments = appointments.filter((item) => isoDate(new Date(item.scheduledAt)) === todayIso);
   const confirmedToday = todayAppointments.filter((item) => item.status === "confirmed" || item.status === "completed");
 
+  // Fica na lista o que ainda vai acontecer e o que é de hoje e continua em
+  // aberto: um horário que acabou de passar precisa do botão "Concluir" à mão,
+  // e não sumir da tela. Dias anteriores se concluem pelo histórico.
   const now = new Date();
   const upcomingAppointments = appointments
-    .filter((item) => new Date(item.scheduledAt) >= now && item.status !== "cancelled")
+    .filter(
+      (item) =>
+        item.status !== "cancelled" &&
+        (new Date(item.scheduledAt) >= now ||
+          (isoDate(new Date(item.scheduledAt)) === todayIso && ["pending", "confirmed"].includes(item.status)))
+    )
     .sort((a, b) => new Date(a.scheduledAt) - new Date(b.scheduledAt));
 
   return (
     <div className="space-y-6">
-      {/* Cinco cartões: três divisões de dinheiro que não se somam nem se
-          confundem. Em telas médias quebram em duas linhas em vez de
+      {/* Cinco cartões. Em telas médias quebram em duas linhas em vez de
           encolherem até o valor não caber. */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <KpiCard label="Agendamentos hoje" value={String(todayAppointments.length)} uppercaseLabel />
         <KpiCard label="Confirmados" value={String(confirmedToday.length)} uppercaseLabel />
-        {/* "Recebido" é dinheiro na mão por serviço prestado: atendimento
-            concluído E pagamento confirmado. */}
-        <KpiCard label="Recebido" value={formatBRL(revenue?.total ?? 0)} uppercaseLabel />
-        {/* Valor que já está na conta de um atendimento que ainda não
-            aconteceu (pix ou cartão de horário futuro). Fica separado porque
-            não é faturamento ainda: se a cliente cancelar, volta para ela. */}
+        {/* "Recebido" é o dinheiro que entrou de fato: todo pagamento
+            confirmado (pix, cartão ou presencial), menos cancelados. */}
+        {/* Cancelado depois de pago fica fora do recebido; o aviso lembra que
+            há dinheiro para devolver (botão "Estornar valor" no histórico). */}
+        <KpiCard
+          label="Recebido"
+          value={formatBRL(revenue?.total ?? 0)}
+          hint={revenue?.refundDue ? `${formatBRL(revenue.refundDue)} a devolver (cancelados)` : undefined}
+          hintTone="warning"
+          uppercaseLabel
+        />
+        {/* Parte do recebido que é de horário futuro: já está na conta, mas
+            volta para a cliente se ela cancelar. */}
         <KpiCard
           label="Pago adiantado"
           value={formatBRL(revenue?.prepaid ?? 0)}
-          hint={revenue?.prepaid ? "Já na conta, atendimento pendente" : undefined}
+          hint={revenue?.prepaid ? "Incluído no recebido, atendimento por vir" : undefined}
           hintTone="positive"
           uppercaseLabel
         />
@@ -156,6 +176,7 @@ export default function AdminDashboardPage() {
 
       {/* Dar baixa num pagamento muda o caixa, então o painel recarrega. */}
       <AppointmentsHistory
+        reloadKey={refreshToken}
         onPaymentChange={() => setRefreshToken((n) => n + 1)}
         onRequestReschedule={setRescheduleTarget}
       />

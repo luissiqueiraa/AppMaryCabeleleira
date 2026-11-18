@@ -76,25 +76,33 @@ export function findActiveAppointmentsForEmployeeOnDay({ employeeId, dayStart, d
   });
 }
 
-// Caixa do salão: dinheiro que entrou de fato — atendimento concluído E
-// pagamento confirmado. Concluir diz que o serviço aconteceu; quem diz que o
-// valor entrou é o paymentStatus (no pix/cartão vem do provedor, no presencial
-// a equipe confirma no painel).
+// Caixa do salão: dinheiro que entrou de fato. Quem diz que o valor entrou é
+// o paymentStatus (no pix/cartão vem do provedor, no presencial a equipe
+// confirma no painel), e não o status do atendimento: exigir "concluído"
+// deixava fora do caixa pix já pago e pagamento presencial confirmado de
+// atendimento que a equipe esqueceu de concluir. Cancelado fica fora: o valor
+// volta para a cliente.
 // Agregado no banco, e não somando a lista no navegador, porque o histórico
 // só cresce.
 export function sumReceivedRevenue({ from, to } = {}) {
-  return sumPrice({ status: "completed", paymentStatus: "paid", ...dateRange({ from, to }) });
+  return sumPrice({
+    status: { in: ["pending", "confirmed", "completed"] },
+    paymentStatus: "paid",
+    ...dateRange({ from, to }),
+  });
 }
 
-// Dinheiro que JÁ entrou de um atendimento que ainda não aconteceu: pix ou
-// cartão aprovado de um horário marcado para frente. Não é "recebido" (o
-// serviço não foi prestado) nem "a receber" (o valor já está na conta) — sem
-// esta linha o valor ficava invisível no painel, embora estivesse no banco.
+// Parte do recebido que é de atendimento ainda por vir: pix ou cartão
+// aprovado de horário marcado para frente. Já está no caixa (e no total
+// recebido), mas é mostrado à parte porque, se a cliente cancelar, volta.
 export function sumPrepaidRevenue({ from, to } = {}) {
+  const now = new Date();
+  const start = from && from > now ? from : now;
+  if (to && to <= start) return Promise.resolve(0);
   return sumPrice({
     status: { in: ["pending", "confirmed"] },
     paymentStatus: "paid",
-    ...dateRange({ from, to }),
+    ...dateRange({ from: start, to }),
   });
 }
 
@@ -106,6 +114,22 @@ export function sumPendingRevenue({ from, to } = {}) {
     paymentStatus: "pending",
     ...dateRange({ from, to }),
   });
+}
+
+// Cancelado depois de pago: o dinheiro entrou e precisa voltar para a cliente.
+// Fica fora do recebido e aparece à parte até a equipe registrar o estorno.
+export function sumRefundDue({ from, to } = {}) {
+  return sumPrice({ status: "cancelled", paymentStatus: "paid", ...dateRange({ from, to }) });
+}
+
+// Registra o estorno no agendamento e na cobrança online ligada a ele (pix ou
+// cartão), juntos: um não pode dizer "estornado" e o outro "pago".
+export async function markAppointmentRefunded(id) {
+  await prisma.$transaction([
+    prisma.appointment.update({ where: { id }, data: { paymentStatus: "refunded" } }),
+    prisma.payment.updateMany({ where: { appointmentId: id, status: "paid" }, data: { status: "refunded" } }),
+  ]);
+  return findAppointmentById(id);
 }
 
 function dateRange({ from, to }) {

@@ -18,7 +18,14 @@ app.use(
     credentials: true,
   })
 );
-app.use(compression());
+// O stream de eventos (SSE) não pode passar pela compressão: ela segura os
+// bytes até juntar um bloco, e o aviso só chegaria minutos depois.
+app.use(
+  compression({
+    filter: (req, res) =>
+      req.originalUrl.startsWith("/api/v1/appointments/events") ? false : compression.filter(req, res),
+  })
+);
 app.use(express.json());
 app.use(cookieParser());
 app.use(morgan(env.nodeEnv === "development" ? "dev" : "combined"));

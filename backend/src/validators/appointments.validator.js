@@ -67,3 +67,4 @@ export const updateAppointmentPaymentSchema = {
 };
 
 export const deleteAppointmentSchema = idParamSchema;
+export const refundAppointmentSchema = idParamSchema;
